@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('jlpt', {
   loadSection: (section) => ipcRenderer.invoke('section:load', section),
   // data/{영역}/images/의 SVG 원문
   readImage: (section, name) => ipcRenderer.invoke('section:image', section, name),
+  // 기록 (userData/progress.json). 없으면 null
+  loadProgress: () => ipcRenderer.invoke('progress:load'),
+  saveProgress: (data) => ipcRenderer.invoke('progress:save', data),
 });

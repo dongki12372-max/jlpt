@@ -48,6 +48,8 @@
           "total": 28,
           "correct": 20,
           "score": 43,
+          "full": true,
+          "seconds": 2380,
           "byType": { "kadai": { "total": 6, "correct": 5 } },
           "answers": [ { "id": "n3-kadai-001", "chosen": 3, "correct": true } ]
         }
@@ -59,8 +61,10 @@
 
 - **items**: 문항별 기록. 공통 필드는 `attempts`, `lastCorrect`, `streak`(연속 정답 수), `lastAt`이다. 영역마다 필드를 더 붙일 수 있다. 예를 들어 단어장은 SRS 상태(`srs: { due, interval, ease }`)를 둔다.
 - **오답노트는 별도 목록이 아니라 `items[*].review` 플래그**다. 틀리면 `true`가 되고, `streak`이 `reviewClearStreak`(2) 이상이 되면 자동으로 `false`가 된다. 수동으로 빼면 `false`가 되고 `reviewManual: true`를 남긴다. 영역별 오답노트는 해당 영역 `items`를 거르기만 하면 된다.
-- **exams**: 실전 모의 기록. `answers`가 있어서 나중에 기록 화면에서 문항별 해설로 다시 들어갈 수 있다. `byType`의 키는 영역마다 다르다(청해는 유형, 문법은 문제 형식).
-- **settings**: `common`은 전 영역 공통(후리가나 표시 등), 나머지는 영역 키 아래에 둔다.
+- **exams**: 실전 모의 기록. `full`은 config의 정식 문항 수로 출제했는지(문제 은행이 부족하면 false), `seconds`는 소요 시간이다. `answers`가 있어서 나중에 기록 화면에서 문항별 해설로 다시 들어갈 수 있다. `byType`의 키는 영역마다 다르다(청해는 유형, 문법은 문제 형식).
+- **settings**: `common`은 전 영역 공통(후리가나 표시 등), 나머지는 영역 키 아래에 둔다. 청해는 `playbackRate`(연습 기본 속도), `answerSeconds`, `order`(seq/random), `unsolvedFirst`.
+- 실전 모의의 답도 `items`에 기록한다(무응답은 오답). 저장은 임시 파일에 쓴 뒤 바꿔 넣고, 깨진 파일은 `progress.json.broken-<시각>`으로 보관한 뒤 빈 기록으로 시작한다.
+- 테스트는 `JLPT_USER_DATA` 환경 변수로 저장 위치를 바꿔 실제 기록을 건드리지 않는다.
 - 영역 키가 없으면 빈 기록으로 본다. 그래서 새 영역을 추가할 때 마이그레이션이 필요 없다. 구조를 바꿀 때만 `version`을 올린다.
 
 ## 3. 단어 데이터 형식 (청해 vocab → 단어장)

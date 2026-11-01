@@ -119,6 +119,7 @@ const QuestionView = (() => {
     const imgOptions = q.options.every((o) => o.image);
     function renderOptions() {
       const box = $('[data-el="options"]');
+      box.dataset.qid = q.id;
       box.classList.toggle('grid', imgOptions);
       box.innerHTML = q.options.map((o, i) => {
         const n = i + 1;

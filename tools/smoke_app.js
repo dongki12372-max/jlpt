@@ -10,6 +10,10 @@ const fs = require('fs');
 const OUT = process.env.SMOKE_OUT || path.join(__dirname, '..', 'smoke-out');
 fs.mkdirSync(OUT, { recursive: true });
 
+// 실제 기록을 건드리지 않도록 빈 임시 폴더를 저장 위치로 쓴다
+if (!process.env.JLPT_USER_DATA) {
+  process.env.JLPT_USER_DATA = fs.mkdtempSync(path.join(require('os').tmpdir(), 'jlpt-smoke-'));
+}
 require('../app/main.js');
 
 const consoleErrors = [];
@@ -61,6 +65,26 @@ async function run(win) {
     await examRealtime(process.env.SMOKE_EXAM_REALTIME, { js, click, exists });
     return;
   }
+  // SMOKE_PERSIST=write → 한 문항을 틀리게 풀고 종료 / =read → 다시 켠 앱에서 그 기록 확인 (같은 JLPT_USER_DATA)
+  if (process.env.SMOKE_PERSIST === 'write') {
+    await click('[data-mode="practice"]');
+    await click('[data-type="kadai"]');
+    await sleep(500);
+    const ans = await js('Listening.questions("N5").find(q => q.type === "kadai").answer');
+    await key(String(ans % 4 + 1));
+    await js('Storage.setSetting("listening", "answerSeconds", 20); true');
+    await sleep(800);
+    check('기록 쓰고 종료', !!(await js('Storage.item("listening", "n5-kadai-001")')));
+    return;
+  }
+  if (process.env.SMOKE_PERSIST === 'read') {
+    const it = await js('Storage.item("listening", "n5-kadai-001")');
+    check('앱을 다시 켜도 풀이 기록 유지', it && it.attempts === 1 && it.review === true, JSON.stringify(it));
+    check('앱을 다시 켜도 설정 유지', (await js('Listening.prefs.answerSeconds')) === 20);
+    await js('App.showHome()');
+    check('앱을 다시 켜도 오답노트에 남음', (await text('[data-mode="review"] .mode-desc')).startsWith('1문항'));
+    return;
+  }
   check('홈 화면', await exists('.mode-card[data-mode="practice"]'), await text('h1'));
   check('창 제목 = config.appName', (await js('document.title')) === (await js('APP_CONFIG.appName')));
   const tabs = await js('Array.from(document.querySelectorAll("[data-section]")).map(b => b.dataset.section + (b.disabled ? ":off" : ":on"))');
@@ -79,9 +103,12 @@ async function run(win) {
     for (const type of types) {
       const tag = `${level} ${type}`;
       await click(`[data-type="${type}"]`);
-      await sleep(1200);
-      const p0 = await player();
-      check(`${tag}: 음성 자동 재생`, !p0.paused && p0.t > 0 && p0.d > 0, `t=${p0.t.toFixed(2)} / ${p0.d.toFixed(1)}`);
+      // 재생이 실제로 시작될 때까지 최대 3초 (첫 재생은 오디오 장치 준비로 늦을 수 있다) — 걸린 시간을 기록
+      const tClick = Date.now();
+      let p0 = await player();
+      while (Date.now() - tClick < 3000 && (p0.paused || p0.t < 0.2)) { await sleep(100); p0 = await player(); }
+      const startDelay = ((Date.now() - tClick) / 1000).toFixed(1);
+      check(`${tag}: 음성 자동 재생`, !p0.paused && p0.t > 0 && p0.d > 0, `t=${p0.t.toFixed(2)} / ${p0.d.toFixed(1)}, ${p0.paused ? '멈춤' : '재생'}, 확인까지 ${startDelay}초`);
 
       const q = await js('(() => { const n = document.querySelectorAll("[data-el=options] .opt").length; const spoken = !!document.querySelector(".opt.num-only"); return { n, spoken }; })()');
       const qdata = await js(`(() => { const lv = ${JSON.stringify(level)}.toLowerCase(); const qs = Listening.questions(${JSON.stringify(level)}).filter(q => q.type === ${JSON.stringify(type)}); return qs.map(q => ({ id: q.id, answer: q.answer, spoken: q.spokenOptions, info: Listening.audioInfo(q), n: q.options.length })); })()`);
@@ -181,17 +208,23 @@ async function run(win) {
   await js(`Player.playSegment(${seg[0]}, ${seg[1]})`);
   await sleep(((seg[1] - seg[0]) / 1.2) * 1000 + 700);
   const ph = await player();
+  // 숨긴 상태에서 새 음성 시작 (실전 모의에서 창이 가려진 채 다음 문항으로 넘어가는 상황)
+  await js(`(() => { const q = Listening.questions("N5")[0]; Player.load(Listening.audioUrl(q)); Player.play(); return true; })()`);
+  await sleep(1500);
+  const pn = await player();
+  check('창을 숨긴 상태에서 새 음성 재생 시작', !pn.paused && pn.t > 0.3, `t=${pn.t.toFixed(2)}, ${pn.paused ? '멈춤' : '재생'}`);
   win.show();
   check('창을 숨겨도 구간 끝에서 멈춤', ph.paused && Math.abs(ph.t - seg[1]) < 0.3, `${ph.t.toFixed(2)} (끝 ${seg[1]}, ${ph.paused ? '멈춤' : '재생 중'})`);
 
   await examTests(win, { js, click, exists, text, key, shot, player });
+  await storageTests(win, { js, click, exists, text, key, shot, player });
 }
 
 // ---------- 실전 모의 ----------
 // 음성은 끝 근처로 건너뛰고, 답 고르는 시간·간격은 테스트 동안만 줄여서 처음부터 끝까지 진행한다.
 async function examTests(win, { js, click, exists, text, key, shot, player }) {
-  const orig = await js('({ a: Listening.cfg.answerSeconds, g: Listening.cfg.examGapSeconds })');
-  await js('Listening.cfg.answerSeconds = 1; Listening.cfg.examGapSeconds = 0.2;');
+  const orig = await js('({ a: Listening.prefs.answerSeconds, g: Listening.cfg.examGapSeconds })');
+  await js('Listening.prefs.answerSeconds = 1; Listening.cfg.examGapSeconds = 0.2;');
 
   for (const level of await js('Object.keys(APP_CONFIG.levels)')) {
     const tag = `실전 ${level}`;
@@ -279,7 +312,7 @@ async function examTests(win, { js, click, exists, text, key, shot, player }) {
     check(`${tag}: 해설 → 결과로 돌아오기`, await exists('.score-card'));
   }
 
-  await js(`Listening.cfg.answerSeconds = ${orig.a}; Listening.cfg.examGapSeconds = ${orig.g};`);
+  await js(`Listening.prefs.answerSeconds = ${orig.a}; Listening.cfg.examGapSeconds = ${orig.g};`);
 }
 
 // 실전 모의 실제 시간 진행: 음성 길이 합 + 문항 수 × (답 고르는 시간 + 간격)과 실제 소요 시간을 비교한다.
@@ -287,7 +320,7 @@ async function examRealtime(level, { js, click, exists }) {
   await click(`[data-level="${level}"]`);
   await click('[data-mode="exam"]');
   await sleep(200);
-  const c = await js('({ a: Listening.cfg.answerSeconds, g: Listening.cfg.examGapSeconds })');
+  const c = await js('({ a: Listening.prefs.answerSeconds, g: Listening.cfg.examGapSeconds })');
   const t0 = Date.now();
   await click('[data-act="begin"]');
   const segs = [];   // [{ name, start, d }]
@@ -317,4 +350,105 @@ async function examRealtime(level, { js, click, exists }) {
   check(`실전 ${level} 실제 시간: 소요 ${actual.toFixed(1)}초 ≈ 예상 ${expected.toFixed(1)}초 (차이 3초 이내)`, Math.abs(actual - expected) < 3);
   check(`실전 ${level} 실제 시간: 음성·타이머가 모두 멈춘 구간 최대 ${(maxIdleGap / 1000).toFixed(2)}초 (1초 미만)`, maxIdleGap < 1000);
   check(`실전 ${level} 실제 시간: 전 문항 정답 채점`, done && (await js('document.querySelector(".score-sub").textContent')).startsWith(`${nq} / ${nq}`));
+}
+
+// ---------- 기록·오답노트·설정 (Phase 5) ----------
+async function storageTests(win, { js, click, exists, text, key, shot, player }) {
+  const wc = win.webContents;
+  const reload = async () => {
+    await new Promise((r) => { wc.once('did-finish-load', r); wc.reload(); });
+    await sleep(800);
+  };
+  const items = () => js('Storage.section("listening").items');
+
+  // 연습·실전에서 푼 문항이 모두 기록됨
+  const all = await js('["N5","N4","N3"].flatMap(l => Listening.questions(l).map(q => q.id))');
+  let it = await items();
+  check('풀이 기록: 전 문항 기록됨', all.every((id) => it[id] && it[id].attempts >= 1), `${Object.keys(it).length}/${all.length}`);
+  const exams = await js('Storage.section("listening").exams.length');
+  check('실전 모의 기록 3회 저장', exams === 3, `${exams}회`);
+
+  // 홈 통계
+  await js('App.showHome()');
+  await click('[data-level="N3"]');
+  await sleep(200);
+  check('홈: 최근 실전 모의 점수 표시', await exists('[data-el="last-exam"]'), await text('.last-exam'));
+  const summary = await js('Array.from(document.querySelectorAll("[data-el=summary] tbody tr")).map(r => r.children[2].textContent.trim())');
+  check('홈: 유형별 푼 문항 수', summary.every((x) => x === '2 / 2'), summary.join(','));
+  await shot('11-home-stats-N3');
+
+  // 기록이 창을 다시 불러와도 유지됨
+  const before = JSON.stringify(await items());
+  await reload();
+  check('다시 불러와도 기록 유지', JSON.stringify(await items()) === before);
+
+  // 오답노트: 목록 · 수동 제거 · 연속 2번 정답 자동 제거
+  await click('[data-level="N3"]');
+  await click('[data-mode="review"]');
+  await sleep(200);
+  const reviewIds = await js('Listening.reviewList("N3").map(q => q.id)');
+  const shown = await js('document.querySelectorAll(".review-list li").length');
+  check('오답노트 목록 = 오답 문항', reviewIds.length > 0 && shown === reviewIds.length, `${shown}문항`);
+  await shot('12-review-N3');
+  const removeId = reviewIds[0];
+  await click(`[data-remove="${removeId}"]`);
+  await sleep(200);
+  it = await items();
+  check('오답노트 수동 제거', !it[removeId].review && it[removeId].reviewManual
+    && (await js('document.querySelectorAll(".review-list li").length')) === shown - 1);
+
+  // 연속 정답 0인 오답 문항 (실전 모의는 순서가 무작위라 이미 한 번 맞힌 문항이 섞여 있을 수 있다)
+  const target = await js('Listening.reviewList("N3").find(q => Listening.record(q).streak === 0)');
+  for (let round = 1; round <= 2; round++) {
+    await click(`[data-start-type="${target.type}"]`);
+    await sleep(600);
+    // 같은 유형의 오답이 여러 개일 수 있다: 화면의 문항마다 정답을 눌러 끝까지 진행
+    for (let guard = 0; guard < 10 && !(await exists('.done')); guard++) {
+      const ans = await js('(() => { const id = document.querySelector("[data-el=options]").dataset.qid; return Listening.questions("N3").find(q => q.id === id).answer; })()');
+      await key(String(ans));
+      await sleep(150);
+      await key('Enter');
+      await sleep(500);
+    }
+    await sleep(300);
+    const r = (await items())[target.id];
+    if (round === 1) check('오답노트: 1번 정답 후에는 남아 있음', r.review && r.streak === 1, `streak ${r.streak}`);
+    else check('오답노트: 연속 2번 정답이면 자동으로 빠짐', !r.review && r.streak === 2, `streak ${r.streak}`);
+    await click('[data-act="back"]');
+    await sleep(300);
+  }
+
+  // 설정: 저장 → 다시 불러와도 유지 → 적용
+  await js('App.showSettings()');
+  await sleep(200);
+  await js(`(() => {
+    const set = (sel, v) => { const el = document.querySelector(sel); if (el.type === 'checkbox') el.checked = v; else el.value = v; el.dispatchEvent(new Event('change')); };
+    set('[data-setting="playbackRate"]', '0.9');
+    set('[data-setting="answerSeconds"]', '15');
+    set('[data-setting="furigana"]', false);
+  })()`);
+  await sleep(200);
+  await shot('13-settings');
+  await reload();
+  const st = await js('({ rate: Listening.prefs.defaultRate, ans: Listening.prefs.answerSeconds, furi: Listening.prefs.furigana })');
+  check('설정 저장·유지 (속도 0.9, 답 15초, 후리가나 끔)', st.rate === 0.9 && st.ans === 15 && st.furi === false, JSON.stringify(st));
+  await click('[data-mode="practice"]');
+  await click('[data-type="kadai"]');
+  await sleep(800);
+  const pr = await player();
+  check('설정 적용: 연습 기본 속도 0.9배', Math.abs(pr.rate - 0.9) < 1e-6, `rate=${pr.rate}`);
+  await key('1');
+  check('설정 적용: 후리가나 숨김', await js('document.body.classList.contains("no-furigana")'));
+  await js('App.showHome()');
+  await click('[data-mode="exam"]');
+  check('설정 적용: 실전 답 고르는 시간 15초', (await text('.rules')).includes('15초'));
+
+  // 초기화 (확인 대화상자는 테스트에서 '확인'으로 대체)
+  await js('App.showSettings()');
+  await js('window.confirm = () => true; true');
+  await click('[data-act="reset"]');
+  await sleep(400);
+  await reload();
+  const after = await js('({ n: Object.keys(Storage.section("listening").items).length, e: Storage.section("listening").exams.length, rate: Listening.prefs.defaultRate })');
+  check('기록 초기화 후 다시 불러와도 비어 있음', after.n === 0 && after.e === 0 && after.rate === 1, JSON.stringify(after));
 }

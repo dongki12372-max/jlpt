@@ -13,13 +13,15 @@ const Practice = (() => {
   function showSetup(level) {
     const qs = Listening.questions(level);
     const cards = Listening.levelTypes(level).map((t) => {
-      const n = qs.filter((q) => q.type === t).length;
+      const ofType = qs.filter((q) => q.type === t);
+      const n = ofType.length;
+      const solved = ofType.filter((q) => Listening.record(q)).length;
       const tc = cfg().types[t];
       return `
         <button class="type-card" data-type="${t}" ${n ? '' : 'disabled'}>
           <span class="type-ja" lang="ja">${tc.label_ja}</span>
           <span class="type-ko">${tc.label_ko}</span>
-          <span class="dim">${n}문항</span>
+          <span class="dim">${n}문항 · 푼 문항 ${solved}</span>
         </button>`;
     }).join('');
 
@@ -33,6 +35,7 @@ const Practice = (() => {
         <button data-order="seq" class="${prefs().order === 'seq' ? 'active' : ''}">순서대로</button>
         <button data-order="random" class="${prefs().order === 'random' ? 'active' : ''}">무작위</button>
       </div>
+      <label class="switch inline"><input type="checkbox" data-el="unsolved" ${prefs().unsolvedFirst ? 'checked' : ''}> 안 푼 문항 우선</label>
       <div class="type-grid">${cards}</div>
     `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
 
@@ -41,14 +44,18 @@ const Practice = (() => {
       prefs().order = b.dataset.order;
       $$('[data-order]').forEach((x) => x.classList.toggle('active', x === b));
     }));
+    $('[data-el="unsolved"]').addEventListener('change', (e) => { prefs().unsolvedFirst = e.target.checked; });
     $$('[data-type]').forEach((b) => b.addEventListener('click', () => start(level, b.dataset.type)));
   }
 
   function start(level, type) {
-    const list = Listening.questions(level).filter((q) => q.type === type);
+    let list = Listening.questions(level).filter((q) => q.type === type);
+    if (prefs().order === 'random') list = Util.shuffle(list);
+    // 안 푼 문항 우선: 순서(순서대로/무작위)는 유지한 채 안 푼 문항을 앞으로
+    if (prefs().unsolvedFirst) list = [...list.filter((q) => !Listening.record(q)), ...list.filter((q) => Listening.record(q))];
     session = {
       level, type,
-      list: prefs().order === 'random' ? Util.shuffle(list) : list,
+      list,
       idx: 0,
       results: [],
     };
@@ -66,7 +73,10 @@ const Practice = (() => {
       backLabel: '← 유형 선택',
       onBack: () => showSetup(session.level),
       autoplay: true,
-      onAnswer: (n, correct) => session.results.push({ id: q.id, correct }),
+      onAnswer: (n, correct) => {
+        session.results.push({ id: q.id, correct });
+        Listening.recordAnswer(q, correct);
+      },
       nextLabel: last ? '결과 보기' : '다음 문제',
       onNext: next,
     });

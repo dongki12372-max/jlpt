@@ -55,8 +55,8 @@ const Exam = (() => {
         ${short.length ? `<p class="notice">문제 은행이 부족해 ${want}문항 중 ${total}문항만 출제합니다. 문항을 추가하면 실전과 같은 구성이 됩니다.</p>` : ''}
         <ul class="rules dim">
           <li>실제 시험처럼 음성은 한 번만 재생되고, 일시정지·다시 듣기·속도 조절을 할 수 없습니다.</li>
-          <li>각 문항 음성이 끝나면 답 고르는 시간 ${cfg().answerSeconds}초가 주어집니다. 그 안에서는 답을 바꿀 수 있습니다.</li>
-          <li>정답은 시험이 끝난 뒤 결과 화면에서 확인합니다. 실제 시험 시간은 ${cfg().levels[level].examMinutes}분입니다.</li>
+          <li>각 문항 음성이 끝나면 답 고르는 시간 ${Listening.prefs.answerSeconds}초가 주어집니다. 그 안에서는 답을 바꿀 수 있습니다.</li>
+          <li>정답은 시험이 끝난 뒤 결과 화면에서 확인합니다. 결과는 기록에 저장되고 틀린 문항은 오답노트에 들어갑니다. 실제 시험 시간은 ${cfg().levels[level].examMinutes}분입니다.</li>
         </ul>
         <div class="next-row">
           <button class="primary" data-act="begin" ${total ? '' : 'disabled'}>시작 <span class="kbd">Enter</span></button>
@@ -199,7 +199,7 @@ const Exam = (() => {
   }
 
   function answerTime(item) {
-    const sec = cfg().answerSeconds;
+    const sec = Listening.prefs.answerSeconds;
     const end = Date.now() + sec * 1000;
     const tick = () => {
       const left = Math.max(0, end - Date.now());
@@ -245,7 +245,33 @@ const Exam = (() => {
       correct: answers[it.q.id] === it.q.answer,
     }));
     result = { level, rows, seconds: Math.round((Date.now() - startedAt) / 1000) };
+    saveRecord(result);
     showResult();
+  }
+
+  // 기록 저장: 문항별 풀이(무응답은 오답으로) + 실전 모의 기록 (docs/DESIGN.md 2장)
+  function saveRecord({ level, rows, seconds }) {
+    rows.forEach((r) => Listening.recordAnswer(r.item.q, r.correct));
+    const correct = rows.filter((r) => r.correct).length;
+    const byType = {};
+    rows.forEach((r) => {
+      const t = r.item.part.type;
+      byType[t] = byType[t] || { total: 0, correct: 0 };
+      byType[t].total += 1;
+      if (r.correct) byType[t].correct += 1;
+    });
+    const official = Object.values(cfg().levels[level].exam).reduce((a, b) => a + b, 0);
+    Storage.addExam(Listening.SECTION, {
+      at: new Date().toISOString(),
+      level,
+      total: rows.length,
+      correct,
+      score: Math.round((correct / rows.length) * cfg().examScoreMax),
+      full: rows.length === official,
+      seconds,
+      byType,
+      answers: rows.map((r) => ({ id: r.item.q.id, chosen: r.chosen, correct: r.correct })),
+    });
   }
 
   function showResult() {

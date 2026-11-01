@@ -245,3 +245,31 @@ rt { font-size: 0.55em; color: var(--text-dim); }
 .exam-list .ok .mark { color: var(--ok); }
 .exam-list .ng .mark { color: var(--ng); }
 .exam-list .link { margin-left: auto; }
+
+/* ============== 홈 머리말 ============== */
+.app-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.last-exam { margin: 0 0 8px; }
+.score-mini { font-size: 20px; font-weight: 800; }
+
+/* ============== 설정 ============== */
+.settings .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.settings .row:last-of-type { border-bottom: none; }
+.settings select {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px; font: inherit;
+}
+.secondary.danger { color: var(--ng); border-color: var(--ng); }
+.saved { min-height: 18px; margin: 4px 0 0; }
+.switch.inline { margin: 0 0 16px 14px; }
+
+/* ============== 오답노트 ============== */
+.next-row.left { justify-content: flex-start; align-items: center; }
+.review-group .group-head { display: flex; align-items: center; justify-content: space-between; }
+.review-group h3 { margin: 0; color: var(--text); }
+.review-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.review-list li { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.review-list li:last-child { border-bottom: none; }
+.review-list .qid { font-variant-numeric: tabular-nums; min-width: 9em; }
+.review-list .link { margin-left: auto; }
+.empty p { margin: 0; }
+.result-list .badge { margin-left: 6px; font-size: 11px; padding: 0 6px; }
