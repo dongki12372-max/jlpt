@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jlpt-listening/question-bank",
+  "title": "JLPT 청해 문제 은행 (레벨별 파일 하나 = 문항 배열)",
+  "description": "구조만 정의한다. 유형별 선택지 개수, 레벨-유형 조합, 정답 범위, 스크립트 일치 등은 tools/validate.py가 app/config.js를 읽어 검사한다.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/question" },
+  "$defs": {
+    "speaker": { "enum": ["M", "F", "M2", "F2"] },
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["speaker", "text"],
+      "properties": {
+        "speaker": { "$ref": "#/$defs/speaker" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "ttsText": { "$ref": "#/$defs/nonEmpty", "description": "edge-tts 읽기 교정용. 없으면 text를 읽힌다." }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "ttsText": { "$ref": "#/$defs/nonEmpty", "description": "음성 선택지의 읽기 교정용" },
+        "image": { "type": "string", "pattern": "^[a-z0-9-]+-opt[1-4]\\.svg$", "description": "data/images/ 안의 파일명" }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions", "answer", "script", "explanation_ko", "vocab", "tags"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^n[345]-(kadai|point|gaiyou|hatsuwa|sokuji)-[0-9]{3}$" },
+        "level": { "enum": ["N5", "N4", "N3"] },
+        "type": { "enum": ["kadai", "point", "gaiyou", "hatsuwa", "sokuji"] },
+        "situation": { "type": "string", "description": "맨 앞에 읽는 상황 설명. 즉시응답은 빈 문자열" },
+        "question": { "type": "string", "description": "질문 문장. 즉시응답은 빈 문자열" },
+        "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/option" }, "minItems": 3, "maxItems": 4 },
+        "spokenOptions": { "type": "boolean" },
+        "optionSpeaker": {
+          "enum": ["N", "M", "F", "M2", "F2"],
+          "description": "음성 선택지를 읽는 화자. 발화표현은 장면 속 말하는 사람, 즉시응답은 대답하는 사람. 생략하면 N(내레이터)"
+        },
+        "answer": { "type": "integer", "minimum": 1 },
+        "scene": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text_ko"],
+          "properties": {
+            "image": { "type": "string", "pattern": "^[a-z0-9-]+-scene\\.svg$" },
+            "text_ko": { "$ref": "#/$defs/nonEmpty" }
+          }
+        },
+        "script": { "$ref": "#/$defs/nonEmpty", "description": "줄마다 '화자：대사', 후리가나는 {漢字|かんじ}. 발화표현은 'N：상황+질문' 한 줄" },
+        "explanation_ko": { "$ref": "#/$defs/nonEmpty" },
+        "vocab": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["word", "reading", "meaning_ko"],
+            "properties": {
+              "word": { "$ref": "#/$defs/nonEmpty" },
+              "reading": { "$ref": "#/$defs/nonEmpty" },
+              "meaning_ko": { "$ref": "#/$defs/nonEmpty" }
+            }
+          }
+        },
+        "tags": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "hatsuwa" } } }, "then": { "required": ["scene", "optionSpeaker"] } },
+        { "if": { "properties": { "type": { "const": "sokuji" } } }, "then": { "required": ["optionSpeaker"] } },
+        { "if": { "properties": { "type": { "not": { "const": "hatsuwa" } } } }, "then": { "not": { "required": ["scene"] } } }
+      ]
+    }
+  }
+}

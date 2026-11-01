@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# 생성된 음성 (build_audio.py 결과물, 빌드 때만 앱에 포함)
+audio/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node / Electron
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
