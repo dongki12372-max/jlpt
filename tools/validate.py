@@ -92,8 +92,21 @@ def check_tts_reading(text, tts, spans):
         want.append(text[k:b])
         want = "".join(want)
         if to_hiragana(got) != to_hiragana(want):
-            problems.append((True, f"ttsText 읽기 「{got}」 ≠ 스크립트 후리가나 「{want}」 ({text[a:b]})"))
+            problems.append((True, f"ttsText 읽기 「{got}」 ≠ 후리가나 「{want}」 ({text[a:b]})"))
     return problems
+
+
+def check_furigana_markup(markup, label, err, warn):
+    """{漢字|かな} 문법, 읽기가 가나인지, 후리가나 없이 남은 한자(경고)."""
+    for m in FURIGANA_RE.finditer(markup):
+        if not KANA_RE.match(m.group(2)):
+            err(f"{label}: 후리가나 읽기에 가나 외 문자: {m.group(0)}")
+    rest = FURIGANA_RE.sub("", markup)
+    if re.search(r"[{}|]", rest):
+        err(f"{label}: 짝이 안 맞는 {{…|…}} 표기")
+    bare = sorted(set(KANJI_RE.findall(rest)))
+    if bare:
+        warn(f"{label}: 후리가나 없는 한자 {''.join(bare)}")
 
 
 def expected_script_lines(q):
@@ -171,13 +184,8 @@ def check_question(q, level_key, cfg, errors, warnings):
             err(f"그림 없음: data/images/{scene_img}")
 
     # 스크립트: 후리가나 문법 + 대사와 일치
-    for m in FURIGANA_RE.finditer(q["script"]):
-        if not KANA_RE.match(m.group(2)):
-            err(f"후리가나 읽기에 가나 외 문자: {m.group(0)}")
-    plain = strip_furigana(q["script"])
-    if re.search(r"[{}|]", plain):
-        err("스크립트에 짝이 안 맞는 {…|…} 표기")
-    got = plain.split("\n")
+    check_furigana_markup(q["script"], "스크립트", err, warn)
+    got = strip_furigana(q["script"]).split("\n")
     want = expected_script_lines(q)
     if got != want:
         if len(got) != len(want):
@@ -196,9 +204,25 @@ def check_question(q, level_key, cfg, errors, warnings):
             spans = [(s - offset, e - offset, r) for s, e, r in spans if s >= offset]
             for is_err, msg in check_tts_reading(line["text"], line["ttsText"], spans):
                 (err if is_err else warn)(f"대사 {i}: {msg}")
+    # 선택지: 후리가나(화면 표시용) + ttsText ↔ 후리가나 읽기
     for i, opt in enumerate(q["options"], 1):
-        if opt.get("ttsText") == opt["text"]:
-            warn(f"선택지 {i}: ttsText가 text와 같음 (불필요)")
+        label = f"선택지 {i}"
+        furi = opt.get("furigana")
+        if furi is None:
+            if KANJI_RE.search(opt["text"]):
+                err(f"{label}: 한자가 있는데 furigana가 없음")
+            spans = []
+        else:
+            check_furigana_markup(furi, label, err, warn)
+            plain, spans = furigana_spans(furi)
+            if plain != opt["text"]:
+                err(f"{label}: furigana를 지운 글자가 text와 다름\n      furigana: {plain}\n      text    : {opt['text']}")
+                continue
+            if not KANJI_RE.search(opt["text"]):
+                warn(f"{label}: 한자가 없는데 furigana가 있음")
+        if "ttsText" in opt:
+            for is_err, msg in check_tts_reading(opt["text"], opt["ttsText"], spans):
+                (err if is_err else warn)(f"{label}: {msg}")
 
     # 해설 길이 (2~4문장 권장)
     n_sent = len([s for s in re.split(r"(?<=[.!?。])\s*", q["explanation_ko"]) if s.strip()])

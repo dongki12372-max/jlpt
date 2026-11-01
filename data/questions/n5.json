@@ -77,10 +77,10 @@
       { "speaker": "M", "text": "それは遅いですね。" }
     ],
     "options": [
-      { "text": "11時" },
-      { "text": "11時半" },
-      { "text": "12時" },
-      { "text": "12時半" }
+      { "text": "11時", "furigana": "11{時|じ}" },
+      { "text": "11時半", "furigana": "11{時半|じはん}" },
+      { "text": "12時", "furigana": "12{時|じ}" },
+      { "text": "12時半", "furigana": "12{時半|じはん}" }
     ],
     "spokenOptions": false,
     "answer": 4,
@@ -133,9 +133,9 @@
     "question": "何と言いますか。",
     "lines": [],
     "options": [
-      { "text": "すみません、お水をください。" },
-      { "text": "すみません、お水はいかがですか。" },
-      { "text": "お水を飲みませんか。" }
+      { "text": "すみません、お水をください。", "furigana": "すみません、お{水|みず}をください。" },
+      { "text": "すみません、お水はいかがですか。", "furigana": "すみません、お{水|みず}はいかがですか。" },
+      { "text": "お水を飲みませんか。", "furigana": "お{水|みず}を{飲|の}みませんか。" }
     ],
     "spokenOptions": true,
     "optionSpeaker": "M",
@@ -183,9 +183,9 @@
       { "speaker": "F", "text": "この本、借りてもいいですか。" }
     ],
     "options": [
-      { "text": "はい、借りました。" },
+      { "text": "はい、借りました。", "furigana": "はい、{借|か}りました。" },
       { "text": "ええ、どうぞ。" },
-      { "text": "じゃあ、借ります。" }
+      { "text": "じゃあ、借ります。", "furigana": "じゃあ、{借|か}ります。" }
     ],
     "spokenOptions": true,
     "optionSpeaker": "M",
@@ -208,9 +208,9 @@
       { "speaker": "M", "text": "いっしょに昼ごはんを食べませんか。" }
     ],
     "options": [
-      { "text": "いいですね。食べましょう。" },
-      { "text": "はい、食べました。" },
-      { "text": "いいえ、食べませんでした。" }
+      { "text": "いいですね。食べましょう。", "furigana": "いいですね。{食|た}べましょう。" },
+      { "text": "はい、食べました。", "furigana": "はい、{食|た}べました。" },
+      { "text": "いいえ、食べませんでした。", "furigana": "いいえ、{食|た}べませんでした。" }
     ],
     "spokenOptions": true,
     "optionSpeaker": "F",
