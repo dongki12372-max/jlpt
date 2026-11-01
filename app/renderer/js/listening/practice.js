@@ -1,5 +1,5 @@
 // ============================================================
-// 유형별 연습: 유형 선택 → 문항 풀이(재생 컨트롤·즉시 채점) → 해설 → 결과
+// 청해 · 유형별 연습: 유형 선택 → 문항 풀이(재생 컨트롤·즉시 채점) → 해설 → 결과
 //   단축키: 1~4 답 선택, Space 재생/일시정지, R 다시 듣기, Enter 다음
 // ============================================================
 const Practice = (() => {
@@ -8,7 +8,7 @@ const Practice = (() => {
 
   let session = null;   // { level, type, list, idx, results: [{id, correct}] }
 
-  const cfg = () => App.cfg;
+  const cfg = () => Listening.cfg;
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
@@ -18,8 +18,8 @@ const Practice = (() => {
 
   // ---------- 유형 선택 ----------
   function showSetup(level) {
-    const qs = App.questions(level);
-    const cards = App.levelTypes(level).map((t) => {
+    const qs = Listening.questions(level);
+    const cards = Listening.levelTypes(level).map((t) => {
       const n = qs.filter((q) => q.type === t).length;
       const tc = cfg().types[t];
       return `
@@ -52,7 +52,7 @@ const Practice = (() => {
   }
 
   function start(level, type) {
-    const list = App.questions(level).filter((q) => q.type === type);
+    const list = Listening.questions(level).filter((q) => q.type === type);
     session = {
       level, type,
       list: prefs.order === 'random' ? Util.shuffle(list) : list,
@@ -66,7 +66,7 @@ const Practice = (() => {
   function showQuestion() {
     const q = session.list[session.idx];
     const tc = cfg().types[q.type];
-    const info = App.audioInfo(q);
+    const info = Listening.audioInfo(q);
     if (prefs.rate === null) prefs.rate = cfg().defaultPlaybackRate;
     let answered = null;   // 고른 번호
     let lineEls = [];      // 해설의 대사 줄 (재생 위치 강조용)
@@ -115,7 +115,7 @@ const Practice = (() => {
     const offChange = Player.onChange(updatePlayer);
     const offError = Player.onError(() => $('[data-el="audio-error"]').classList.remove('hidden'));
 
-    Player.load(App.audioUrl(q));
+    Player.load(Listening.audioUrl(q));
     Player.setRate(prefs.rate);
     Player.play();
 
@@ -274,7 +274,7 @@ const Practice = (() => {
   function loadImages(container) {
     container.querySelectorAll('[data-img]').forEach(async (el) => {
       try {
-        el.innerHTML = await window.jlpt.readImage(el.dataset.img);
+        el.innerHTML = await Listening.readImage(el.dataset.img);
       } catch (e) {
         el.textContent = '그림 없음';
       }

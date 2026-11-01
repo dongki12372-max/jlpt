@@ -1,15 +1,28 @@
 // ============================================================
-// 앱 뼈대: 데이터 로드, 화면 전환, 키보드 라우팅, 홈 화면
+// 앱 뼈대: 화면 전환, 키보드 라우팅, 홈(영역 → 레벨 → 모드)
+//   영역 모듈은 App.registerSection(id, module)로 등록한다 (js/{영역}/index.js).
+//   module = {
+//     load():            영역 데이터 읽기 (Promise)
+//     modes(level):      [{ id, title, desc, enabled, open() }]  홈의 모드 버튼
+//     summary(level):    홈 아래쪽 요약 HTML
+//   }
+//   config.sections에서 enabled=false이거나 모듈이 없는 영역은 '준비 중'으로 표시한다.
 // ============================================================
 const App = (() => {
   const cfg = window.APP_CONFIG;
   const LEVELS = Object.keys(cfg.levels);   // ['N5', 'N4', 'N3']
-  const state = { data: null, level: LEVELS[0] };
+  const modules = {};
+  const state = { section: cfg.defaultSection, level: LEVELS[0] };
 
   let keyHandler = null;
   let cleanup = null;
 
   const root = () => document.getElementById('app');
+
+  function registerSection(id, module) {
+    modules[id] = module;
+  }
+  const isActive = (id) => !!(cfg.sections[id] && cfg.sections[id].enabled && modules[id]);
 
   // ---------- 화면 전환 ----------
   // onKey: 이 화면의 키보드 처리, onLeave: 화면을 떠날 때 정리
@@ -28,80 +41,71 @@ const App = (() => {
     if (keyHandler) keyHandler(e);
   });
 
-  // ---------- 데이터 도우미 ----------
-  const questions = (level) => state.data.questions[level.toLowerCase()] || [];
-  const levelTypes = (level) => cfg.typeOrder.filter((t) => t in cfg.levels[level].exam);
-  const audioUrl = (q) => `../../audio/${q.level.toLowerCase()}/${q.id}.mp3`;
-  const audioInfo = (q) => state.data.manifest[q.id] || null;
-
   // ---------- 홈 ----------
   function showHome() {
-    const level = state.level;
-    const qs = questions(level);
-    const rows = levelTypes(level).map((t) => {
-      const ofType = qs.filter((q) => q.type === t);
-      const withAudio = ofType.filter((q) => audioInfo(q)).length;
+    const { section, level } = state;
+    const mod = modules[section];
+
+    const sectionTabs = cfg.sectionOrder.map((id) => {
+      const s = cfg.sections[id];
+      const active = isActive(id);
       return `
-        <tr>
-          <td><span lang="ja">${cfg.types[t].label_ja}</span> <span class="dim">${cfg.types[t].label_ko}</span></td>
-          <td class="num">${ofType.length}</td>
-          <td class="num">${cfg.levels[level].exam[t]}</td>
-          <td class="num ${withAudio < ofType.length ? 'warn' : ''}">${withAudio} / ${ofType.length}</td>
-        </tr>`;
+        <button class="section-tab ${id === section ? 'active' : ''}" data-section="${id}" ${active ? '' : 'disabled'}>
+          <span class="section-ko">${Util.esc(s.label_ko)}</span>
+          <span class="section-ja" lang="ja">${Util.esc(s.label_ja)}</span>
+          ${active ? '' : '<span class="soon">준비 중</span>'}
+        </button>`;
     }).join('');
+
+    const modes = mod.modes(level).map((m) => `
+      <button class="mode-card" data-mode="${m.id}" ${m.enabled ? '' : 'disabled'}>
+        <span class="mode-title">${Util.esc(m.title)}</span>
+        <span class="mode-desc">${Util.esc(m.desc)}</span>
+      </button>`).join('');
 
     setScreen(`
       <header class="app-header">
         <h1>${Util.esc(cfg.appName)}</h1>
-        <p class="dim">JLPT 청해(聴解) 연습 · 오프라인</p>
+        <p class="dim">JLPT 연습 · 오프라인</p>
       </header>
 
+      <nav class="section-tabs">${sectionTabs}</nav>
+
       <nav class="level-tabs">
-        ${LEVELS.map((l) => `<button class="tab ${l === level ? 'active' : ''}" data-level="${l}">${l}</button>`).join('')}
+        ${LEVELS.map((l) => `<button class="tab ${l === level ? 'active' : ''}" data-level="${l}">${cfg.levels[l].label}</button>`).join('')}
       </nav>
 
-      <section class="modes">
-        <button class="mode-card" data-mode="practice">
-          <span class="mode-title">유형별 연습</span>
-          <span class="mode-desc">유형을 골라 한 문제씩 풀고 바로 해설 확인</span>
-        </button>
-        <button class="mode-card" disabled>
-          <span class="mode-title">실전 모의</span>
-          <span class="mode-desc">준비 중</span>
-        </button>
-        <button class="mode-card" disabled>
-          <span class="mode-title">오답노트</span>
-          <span class="mode-desc">준비 중</span>
-        </button>
-      </section>
+      <section class="modes">${modes}</section>
 
-      <section class="card">
-        <h2>${level} 문제 은행</h2>
-        <table class="table">
-          <thead><tr><th>유형</th><th class="num">문항</th><th class="num">실전 구성</th><th class="num">음성</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </section>
+      ${mod.summary(level)}
     `);
 
+    root().querySelectorAll('[data-section]:not(:disabled)').forEach((b) =>
+      b.addEventListener('click', () => { state.section = b.dataset.section; showHome(); }));
     root().querySelectorAll('[data-level]').forEach((b) =>
       b.addEventListener('click', () => { state.level = b.dataset.level; showHome(); }));
-    root().querySelector('[data-mode="practice"]').addEventListener('click', () => Practice.showSetup(level));
+    const opens = Object.fromEntries(mod.modes(level).map((m) => [m.id, m.open]));
+    root().querySelectorAll('[data-mode]:not(:disabled)').forEach((b) =>
+      b.addEventListener('click', () => opens[b.dataset.mode]()));
   }
 
   // ---------- 시작 ----------
   async function init() {
     document.title = cfg.appName;
+    const active = cfg.sectionOrder.filter(isActive);
+    if (!active.length) {
+      root().innerHTML = '<p class="error">활성화된 영역이 없습니다 (config.sections).</p>';
+      return;
+    }
+    if (!isActive(state.section)) state.section = active[0];
     try {
-      state.data = await window.jlpt.loadData();
+      await Promise.all(active.map((id) => modules[id].load()));
     } catch (e) {
-      root().innerHTML = `<p class="error">문제 은행을 읽지 못했습니다: ${Util.esc(e.message)}</p>`;
+      root().innerHTML = `<p class="error">데이터를 읽지 못했습니다: ${Util.esc(e.message)}</p>`;
       return;
     }
     showHome();
   }
 
-  return { init, setScreen, showHome, questions, levelTypes, audioUrl, audioInfo, cfg, state };
+  return { init, registerSection, setScreen, showHome, cfg, state };
 })();
-
-App.init();

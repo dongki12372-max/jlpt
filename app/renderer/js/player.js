@@ -8,22 +8,33 @@ const Player = (() => {
 
   let stopAt = null;   // 구간 재생 끝 시각 (초)
   let rafId = 0;
+  let stopTimer = 0;
   const listeners = new Set();
   const errorListeners = new Set();
 
   const emit = () => listeners.forEach((fn) => fn());
 
-  // timeupdate는 간격이 거칠어서, 재생 중에는 프레임마다 구간 끝을 확인한다
-  function tick() {
-    if (stopAt !== null && audio.currentTime >= stopAt) {
+  // 구간 끝 확인은 타이머로 한다. requestAnimationFrame은 창이 가려지면 멈추므로 화면 갱신에만 쓴다.
+  // (창이 뒤에 있어도 타이머가 느려지지 않도록 main.js에서 backgroundThrottling을 끈다)
+  function checkStop() {
+    clearTimeout(stopTimer);
+    if (stopAt === null || audio.paused) return;
+    if (audio.currentTime >= stopAt) {
       stopAt = null;
       audio.pause();
+      return;
     }
+    const ms = ((stopAt - audio.currentTime) / (audio.playbackRate || 1)) * 1000;
+    stopTimer = setTimeout(checkStop, Math.min(Math.max(ms, 5), 250));
+  }
+
+  function tick() {
     emit();
     if (!audio.paused) rafId = requestAnimationFrame(tick);
   }
 
-  audio.addEventListener('play', () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(tick); });
+  audio.addEventListener('play', () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(tick); checkStop(); });
+  ['seeked', 'ratechange', 'timeupdate'].forEach((ev) => audio.addEventListener(ev, checkStop));
   ['pause', 'ended', 'loadedmetadata', 'ratechange', 'seeked'].forEach((ev) => audio.addEventListener(ev, emit));
   audio.addEventListener('error', () => { if (audio.getAttribute('src')) errorListeners.forEach((fn) => fn()); });
 
@@ -47,7 +58,9 @@ const Player = (() => {
     playSegment(start, end) {
       audio.currentTime = start;
       stopAt = end;
-      return this.play();
+      const p = this.play();
+      checkStop();   // 이미 재생 중이면 play 이벤트가 오지 않는다
+      return p;
     },
     seek(t) { audio.currentTime = t; },
     setRate(r) {

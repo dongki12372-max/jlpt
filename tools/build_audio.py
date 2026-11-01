@@ -6,8 +6,8 @@
   .venv/bin/python tools/build_audio.py --id n5-kadai-001
   .venv/bin/python tools/build_audio.py --force          # 전부 다시 생성
 
-순서: validate.py 통과 → 구간별 edge-tts → 쉼과 함께 합치기 → loudnorm → audio/{level}/{id}.mp3
-audio/manifest.json에 내용 해시와 구간 시각(대사별·질문·선택지 읽는 시간·음성 선택지)을 기록한다.
+순서: validate.py 통과 → 구간별 edge-tts → 쉼과 함께 합치기 → loudnorm → audio/listening/{level}/{id}.mp3
+audio/listening/manifest.json에 내용 해시와 구간 시각(대사별·질문·선택지 읽는 시간·음성 선택지)을 기록한다.
 답 고르는 시간은 음성에 넣지 않는다 (앱 타이머).
 """
 import argparse
@@ -22,12 +22,11 @@ from pathlib import Path
 import edge_tts
 from pydub import AudioSegment
 
-from validate import QUESTIONS_DIR, ROOT, load_config
+from validate import AUDIO_DIR, DATA_DIR, QUESTIONS_DIR, ROOT, load_listening_config
 
-AUDIO_DIR = ROOT / "audio"
 MANIFEST_PATH = AUDIO_DIR / "manifest.json"
 VOICES_PATH = ROOT / "tools" / "voices.json"
-INTROS_PATH = ROOT / "data" / "intros.json"
+INTROS_PATH = DATA_DIR / "intros.json"
 BUILD_VERSION = 1  # 합치는 방식이 바뀌면 올려서 전부 다시 만든다
 
 
@@ -192,7 +191,7 @@ def main():
         print("검증 실패 — 음성 생성을 중단합니다.")
         sys.exit(1)
 
-    cfg, vc, intros = load_config(), load_json(VOICES_PATH), load_json(INTROS_PATH)
+    cfg, vc, intros = load_listening_config(), load_json(VOICES_PATH), load_json(INTROS_PATH)
     manifest = load_json(MANIFEST_PATH) if MANIFEST_PATH.is_file() else {}
 
     if args.id:

@@ -19,10 +19,12 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parent.parent
-QUESTIONS_DIR = ROOT / "data" / "questions"
-IMAGES_DIR = ROOT / "data" / "images"
-AUDIO_DIR = ROOT / "audio"
-SCHEMA_PATH = ROOT / "data" / "schema.json"
+# 청해 영역 데이터 (영역별 폴더: data/{영역}/, audio/{영역}/)
+DATA_DIR = ROOT / "data" / "listening"
+QUESTIONS_DIR = DATA_DIR / "questions"
+IMAGES_DIR = DATA_DIR / "images"
+SCHEMA_PATH = DATA_DIR / "schema.json"
+AUDIO_DIR = ROOT / "audio" / "listening"
 CONFIG_PATH = ROOT / "app" / "config.js"
 
 FURIGANA_RE = re.compile(r"\{([^{}|]+)\|([^{}|]+)\}")
@@ -37,6 +39,11 @@ def load_config():
         capture_output=True, text=True, check=True,
     )
     return json.loads(out.stdout)
+
+
+def load_listening_config():
+    """config.js의 청해 영역 설정 (types, typeOrder, levels[레벨].exam 등)."""
+    return load_config()["sections"]["listening"]
 
 
 def strip_furigana(s):
@@ -172,7 +179,7 @@ def check_question(q, level_key, cfg, errors, warnings):
             if img != f"{qid}-opt{i}.svg":
                 err(f"선택지 {i} 그림 파일명은 {qid}-opt{i}.svg여야 함")
             if not (IMAGES_DIR / img).is_file():
-                err(f"그림 없음: data/images/{img}")
+                err(f"그림 없음: data/listening/images/{img}")
     has_imgs = [bool(o.get("image")) for o in q["options"]]
     if any(has_imgs) and not all(has_imgs):
         err("그림 선택지는 전부 있거나 전부 없어야 함")
@@ -181,7 +188,7 @@ def check_question(q, level_key, cfg, errors, warnings):
         if scene_img != f"{qid}-scene.svg":
             err(f"장면 그림 파일명은 {qid}-scene.svg여야 함")
         if not (IMAGES_DIR / scene_img).is_file():
-            err(f"그림 없음: data/images/{scene_img}")
+            err(f"그림 없음: data/listening/images/{scene_img}")
 
     # 스크립트: 후리가나 문법 + 대사와 일치
     check_furigana_markup(q["script"], "스크립트", err, warn)
@@ -239,7 +246,7 @@ def main():
     ap.add_argument("--level", choices=["n5", "n4", "n3"], help="한 레벨만 검사")
     args = ap.parse_args()
 
-    cfg = load_config()
+    cfg = load_listening_config()
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema)
 

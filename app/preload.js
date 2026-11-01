@@ -5,8 +5,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('jlpt', {
-  // { questions: {n5:[…], n4:[…], n3:[…]}, manifest: {id: {...}} }
-  loadData: () => ipcRenderer.invoke('data:load'),
-  // data/images/의 SVG 원문
-  readImage: (name) => ipcRenderer.invoke('data:image', name),
+  // 영역 데이터. 청해: { questions: {n5:[…], n4:[…], n3:[…]}, manifest: {id: {...}} }
+  loadSection: (section) => ipcRenderer.invoke('section:load', section),
+  // data/{영역}/images/의 SVG 원문
+  readImage: (section, name) => ipcRenderer.invoke('section:image', section, name),
 });

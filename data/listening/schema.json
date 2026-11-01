@@ -26,7 +26,7 @@
         "text": { "$ref": "#/$defs/nonEmpty" },
         "furigana": { "$ref": "#/$defs/nonEmpty", "description": "후리가나 표기 {漢字|かんじ}. 표기를 지우면 text와 같아야 한다. text에 한자가 있으면 필수 (validate.py 검사)" },
         "ttsText": { "$ref": "#/$defs/nonEmpty", "description": "음성 선택지의 읽기 교정용. 바꾼 부분은 furigana 읽기와 일치해야 한다" },
-        "image": { "type": "string", "pattern": "^[a-z0-9-]+-opt[1-4]\\.svg$", "description": "data/images/ 안의 파일명" }
+        "image": { "type": "string", "pattern": "^[a-z0-9-]+-opt[1-4]\\.svg$", "description": "data/listening/images/ 안의 파일명" }
       }
     },
     "question": {

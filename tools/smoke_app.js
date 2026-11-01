@@ -58,6 +58,8 @@ async function run(win) {
   await sleep(600);
   check('홈 화면', await exists('.mode-card[data-mode="practice"]'), await text('h1'));
   check('창 제목 = config.appName', (await js('document.title')) === (await js('APP_CONFIG.appName')));
+  const tabs = await js('Array.from(document.querySelectorAll("[data-section]")).map(b => b.dataset.section + (b.disabled ? ":off" : ":on"))');
+  check('영역 탭: 청해만 활성, 나머지 준비 중', tabs.join(',') === 'listening:on,vocab:off,grammar:off', tabs.join(','));
   const blocked = await js(`fetch('https://example.com').then(() => 'reached').catch(() => 'blocked')`);
   check('외부 네트워크 요청 차단', blocked === 'blocked', blocked);
   await shot('01-home');
@@ -67,7 +69,7 @@ async function run(win) {
     await click(`[data-level="${level}"]`);
     await click('[data-mode="practice"]');
     if (level === 'N3') await shot('02-setup-N3');
-    const types = await js(`App.levelTypes(${JSON.stringify(level)})`);
+    const types = await js(`Listening.levelTypes(${JSON.stringify(level)})`);
 
     for (const type of types) {
       const tag = `${level} ${type}`;
@@ -77,7 +79,7 @@ async function run(win) {
       check(`${tag}: 음성 자동 재생`, !p0.paused && p0.t > 0 && p0.d > 0, `t=${p0.t.toFixed(2)} / ${p0.d.toFixed(1)}`);
 
       const q = await js('(() => { const n = document.querySelectorAll("[data-el=options] .opt").length; const spoken = !!document.querySelector(".opt.num-only"); return { n, spoken }; })()');
-      const qdata = await js(`(() => { const lv = ${JSON.stringify(level)}.toLowerCase(); const qs = App.questions(${JSON.stringify(level)}).filter(q => q.type === ${JSON.stringify(type)}); return qs.map(q => ({ id: q.id, answer: q.answer, spoken: q.spokenOptions, info: App.audioInfo(q), n: q.options.length })); })()`);
+      const qdata = await js(`(() => { const lv = ${JSON.stringify(level)}.toLowerCase(); const qs = Listening.questions(${JSON.stringify(level)}).filter(q => q.type === ${JSON.stringify(type)}); return qs.map(q => ({ id: q.id, answer: q.answer, spoken: q.spokenOptions, info: Listening.audioInfo(q), n: q.options.length })); })()`);
       const first = qdata[0];
       check(`${tag}: 선택지 ${first.n}개, 음성 선택지면 번호만`, q.n === first.n && q.spoken === first.spoken);
 
@@ -166,4 +168,14 @@ async function run(win) {
   check('R로 처음부터', p3.t < 1 && !p3.paused, `t=${p3.t.toFixed(2)}`);
   await key('2');
   await shot('06-N5-no-furigana');
+
+  // 창이 숨겨진 상태에서도 구간 재생이 끝에서 멈추는지 (requestAnimationFrame이 멈추는 상황)
+  const seg = await js('(() => { const q = Listening.questions("N5").find(x => x.type === "kadai"); return Listening.audioInfo(q).lines[1]; })()');
+  win.hide();
+  await sleep(300);
+  await js(`Player.playSegment(${seg[0]}, ${seg[1]})`);
+  await sleep(((seg[1] - seg[0]) / 1.2) * 1000 + 700);
+  const ph = await player();
+  win.show();
+  check('창을 숨겨도 구간 끝에서 멈춤', ph.paused && Math.abs(ph.t - seg[1]) < 0.3, `${ph.t.toFixed(2)} (끝 ${seg[1]}, ${ph.paused ? '멈춤' : '재생 중'})`);
 }

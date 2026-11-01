@@ -58,6 +58,18 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .app-header { margin-bottom: 20px; }
 .app-header p { margin: 0; }
 
+.section-tabs { display: flex; gap: 10px; margin-bottom: 14px; }
+.section-tab {
+  display: flex; align-items: baseline; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 16px;
+}
+.section-tab.active { border-color: var(--accent); }
+.section-tab.active .section-ko { color: var(--accent); }
+.section-ko { font-weight: 700; font-size: 16px; }
+.section-ja { color: var(--text-dim); font-size: 13px; }
+.section-tab .soon { font-size: 11px; color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; }
+
 .level-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
 .tab {
   background: var(--surface);

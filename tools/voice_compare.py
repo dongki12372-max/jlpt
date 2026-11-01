@@ -3,7 +3,7 @@
 
   .venv/bin/python tools/voice_compare.py
 
-후보마다 audio/_compare/{후보}.mp3를 만든다. 파일 하나에
+후보마다 audio/listening/_compare/{후보}.mp3를 만든다. 파일 하나에
   기준 화자(내레이터·F2는 F, M2는 M)가 문장을 읽고 → 잠깐 쉼 → 후보가 같은 문장을 읽는다.
 확정한 값은 voices.json의 voices에 옮긴다.
 """
