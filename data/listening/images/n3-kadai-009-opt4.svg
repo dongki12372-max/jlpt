@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="15" y="14" width="210" height="160" rx="4"/>
+  <line x1="15" y1="34" x2="225" y2="34"/>
+  <line x1="60" y1="6" x2="60" y2="22" stroke-width="4"/>
+  <line x1="180" y1="6" x2="180" y2="22" stroke-width="4"/>
+  <text x="120" y="57" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">1</text>
+  <text x="150" y="57" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">2</text>
+  <text x="180" y="57" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">3</text>
+  <text x="210" y="57" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">4</text>
+  <text x="30" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">5</text>
+  <text x="60" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">6</text>
+  <text x="90" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">7</text>
+  <text x="120" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">8</text>
+  <text x="150" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">9</text>
+  <text x="180" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">10</text>
+  <text x="210" y="84" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">11</text>
+  <text x="30" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">12</text>
+  <text x="60" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">13</text>
+  <text x="90" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">14</text>
+  <text x="120" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">15</text>
+  <text x="150" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">16</text>
+  <circle cx="150" cy="106" r="13" stroke-width="3"/>
+  <text x="180" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">17</text>
+  <text x="210" y="111" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">18</text>
+  <text x="30" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">19</text>
+  <text x="60" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">20</text>
+  <text x="90" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">21</text>
+  <text x="120" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">22</text>
+  <text x="150" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">23</text>
+  <text x="180" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">24</text>
+  <text x="210" y="138" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">25</text>
+  <text x="30" y="165" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">26</text>
+  <text x="60" y="165" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">27</text>
+  <text x="90" y="165" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">28</text>
+  <text x="120" y="165" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">29</text>
+  <text x="150" y="165" font-size="14" font-family="sans-serif" text-anchor="middle" fill="currentColor" stroke="none">30</text>
+</svg>
