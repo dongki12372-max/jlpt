@@ -63,11 +63,15 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["word", "reading", "meaning_ko"],
+            "required": ["word", "reading", "meaning_ko", "kind"],
             "properties": {
-              "word": { "$ref": "#/$defs/nonEmpty" },
+              "word": { "$ref": "#/$defs/nonEmpty", "description": "word는 사전형, grammar는 〜로 시작" },
               "reading": { "$ref": "#/$defs/nonEmpty" },
-              "meaning_ko": { "$ref": "#/$defs/nonEmpty" }
+              "meaning_ko": { "$ref": "#/$defs/nonEmpty" },
+              "kind": {
+                "enum": ["word", "expression", "grammar"],
+                "description": "word: 단어장 대상(사전형) / expression: 인사말·관용 표현(통째로 외움) / grammar: 〜로 시작하는 문법 패턴"
+              }
             }
           }
         },

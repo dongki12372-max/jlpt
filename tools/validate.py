@@ -116,6 +116,35 @@ def check_furigana_markup(markup, label, err, warn):
         warn(f"{label}: 후리가나 없는 한자 {''.join(bare)}")
 
 
+# word의 활용 어미 (사전형이 아닐 가능성). 완벽하지 않으므로 경고만 한다.
+#   ます형 계열은 어미만으로, た·て형·ている는 한자+오쿠리가나 뒤일 때만 (あした 같은 명사 제외)
+CONJUGATED_PATTERNS = [
+    (re.compile(r"(ます|ました|ません|ませんでした|ましょう)$"), "ます형"),
+    (re.compile(r"[一-龯々][ぁ-ゖ]*(ている|ていた|てる|てた|でいる|でいた)$"), "ている형"),
+    (re.compile(r"[一-龯々][ぁ-ゖ]*[ぁ-ゖ][ただ]$"), "た형"),
+    (re.compile(r"[一-龯々][ぁ-ゖ]*[ぁ-ゖ][てで]$"), "て형"),
+]
+
+
+def check_vocab(vocab, err, warn):
+    """kind 규칙: grammar는 〜로 시작, word는 사전형(활용 어미면 경고)."""
+    for v in vocab:
+        word, kind = v["word"], v.get("kind")
+        label = f"vocab 「{word}」"
+        if kind is None:
+            err(f"{label}: kind 없음 (word / expression / grammar)")
+            continue
+        if kind == "grammar" and not word.startswith("〜"):
+            err(f"{label}: grammar는 〜로 시작해야 함")
+        if kind != "grammar" and word.startswith("〜"):
+            err(f"{label}: 〜로 시작하면 kind는 grammar여야 함")
+        if kind == "word":
+            for pat, name in CONJUGATED_PATTERNS:
+                if pat.search(word):
+                    warn(f"{label}: {name}으로 끝남 — word는 사전형으로 (expression이면 kind 변경)")
+                    break
+
+
 def expected_script_lines(q):
     """스크립트가 따라야 할 '화자：본문' 줄 목록."""
     if q["type"] == "hatsuwa":
@@ -237,6 +266,7 @@ def check_question(q, level_key, cfg, errors, warnings):
         warn(f"해설이 {n_sent}문장 (2~4문장 권장)")
     if not q["vocab"]:
         warn("vocab이 비어 있음")
+    check_vocab(q["vocab"], err, warn)
     if not q["tags"]:
         warn("tags가 비어 있음")
 
