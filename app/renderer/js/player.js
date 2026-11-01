@@ -11,6 +11,7 @@ const Player = (() => {
   let stopTimer = 0;
   const listeners = new Set();
   const errorListeners = new Set();
+  const endedListeners = new Set();
 
   const emit = () => listeners.forEach((fn) => fn());
 
@@ -37,6 +38,7 @@ const Player = (() => {
   ['seeked', 'ratechange', 'timeupdate'].forEach((ev) => audio.addEventListener(ev, checkStop));
   ['pause', 'ended', 'loadedmetadata', 'ratechange', 'seeked'].forEach((ev) => audio.addEventListener(ev, emit));
   audio.addEventListener('error', () => { if (audio.getAttribute('src')) errorListeners.forEach((fn) => fn()); });
+  audio.addEventListener('ended', () => endedListeners.forEach((fn) => fn()));
 
   return {
     load(src) {
@@ -77,7 +79,9 @@ const Player = (() => {
     get duration() { return Number.isFinite(audio.duration) ? audio.duration : 0; },
     get paused() { return audio.paused; },
     get rate() { return audio.playbackRate; },
+    get src() { return audio.getAttribute('src') || ''; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     onError(fn) { errorListeners.add(fn); return () => errorListeners.delete(fn); },
+    onEnded(fn) { endedListeners.add(fn); return () => endedListeners.delete(fn); },
   };
 })();

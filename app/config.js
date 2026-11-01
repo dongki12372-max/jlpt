@@ -44,6 +44,7 @@
         },
 
         answerSeconds: 12,                         // 답 고르는 시간 기본값 (설정에서 변경 가능)
+        examGapSeconds: 1.5,                       // 실전 모의: 답 고르는 시간이 끝난 뒤 다음 음성까지
         playbackRates: [0.8, 0.9, 1.0, 1.1, 1.2],  // 연습 모드 재생 속도
         defaultPlaybackRate: 1.0,
 

@@ -6,6 +6,9 @@ const Listening = (() => {
   const cfg = window.APP_CONFIG.sections[SECTION];
   let data = null;   // { questions: {n5: […]}, manifest: {id: {...}} }
 
+  // 연습·해설 화면 공용 설정 (Phase 5에서 progress.json settings로 저장)
+  const prefs = { furigana: true, rate: cfg.defaultPlaybackRate, order: 'seq' };
+
   async function load() {
     data = await window.jlpt.loadSection(SECTION);
   }
@@ -20,7 +23,7 @@ const Listening = (() => {
   function modes(level) {
     return [
       { id: 'practice', title: '유형별 연습', desc: '유형을 골라 한 문제씩 풀고 바로 해설 확인', enabled: true, open: () => Practice.showSetup(level) },
-      { id: 'exam', title: '실전 모의', desc: '준비 중', enabled: false },
+      { id: 'exam', title: '실전 모의', desc: '실제 순서·시간대로 한 번만 듣고 풀기', enabled: true, open: () => Exam.showStart(level) },
       { id: 'review', title: '오답노트', desc: '준비 중', enabled: false },
     ];
   }
@@ -50,5 +53,5 @@ const Listening = (() => {
 
   App.registerSection(SECTION, { load, modes, summary });
 
-  return { SECTION, cfg, questions, levelTypes, audioUrl, audioInfo, readImage };
+  return { SECTION, cfg, prefs, questions, levelTypes, audioUrl, audioInfo, readImage };
 })();

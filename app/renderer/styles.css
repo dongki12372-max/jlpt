@@ -203,3 +203,45 @@ rt { font-size: 0.55em; color: var(--text-dim); }
 .result-list li { padding: 3px 0; }
 .result-list .ok .mark { color: var(--ok); }
 .result-list .ng .mark { color: var(--ng); }
+
+/* ============== 실전 모의 ============== */
+.notice { color: var(--ng); background: var(--ng-bg); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+.rules { padding-left: 18px; font-size: 14px; }
+.rules li { margin: 4px 0; }
+.table tfoot td { font-weight: 700; border-bottom: none; }
+.link.danger { color: var(--ng); }
+.exam-top .elapsed { font-variant-numeric: tabular-nums; }
+
+.exam-head { text-align: center; }
+.exam-title { font-size: 17px; font-weight: 700; }
+.exam-num { font-size: 30px; font-weight: 800; min-height: 44px; margin: 6px 0 2px; }
+.exam-status { color: var(--text-dim); min-height: 24px; }
+.exam-status[data-phase="answer"] { color: var(--accent); font-weight: 700; }
+.countdown { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+.countdown .fill { height: 100%; width: 0; background: var(--accent); }
+
+.opt.selected { border-color: var(--accent); background: rgba(91, 157, 255, 0.14); }
+.opt.selected .num { background: var(--accent-strong); color: #fff; }
+.options .opt.num-only { min-height: 52px; }
+
+.score-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score { font-size: 44px; font-weight: 800; line-height: 1; }
+.score-sub { margin-left: 8px; color: var(--text-dim); }
+.badge { margin-left: auto; border-radius: 999px; padding: 2px 12px; font-size: 13px; font-weight: 700; }
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
+.badge.ng { background: var(--ng-bg); color: var(--ng); }
+.score-bar { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px; margin: 26px 0 8px; }
+.score-bar .fill { height: 100%; border-radius: 5px; }
+.score-bar .fill.ok { background: var(--ok); }
+.score-bar .fill.ng { background: var(--ng); }
+.pass-mark { position: absolute; top: -6px; bottom: -6px; width: 2px; background: var(--text); }
+.pass-mark span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 12px; color: var(--text-dim); margin-bottom: 2px; }
+.small { font-size: 12px; }
+
+.exam-list { list-style: none; margin: 0; padding: 0; }
+.exam-list li { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.exam-list li:last-child { border-bottom: none; }
+.exam-list .mark { width: 1.2em; font-weight: 700; }
+.exam-list .ok .mark { color: var(--ok); }
+.exam-list .ng .mark { color: var(--ng); }
+.exam-list .link { margin-left: auto; }
