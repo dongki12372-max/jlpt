@@ -222,5 +222,203 @@
       { "word": "昼ごはん", "reading": "ひるごはん", "meaning_ko": "점심밥", "kind": "word" }
     ],
     "tags": ["권유"]
+  },
+  {
+    "id": "n5-hatsuwa-003",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "店で、かばんがいくらか知りたいです。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "このかばんを ください。" },
+      { "text": "すみません、このかばんは いくらですか。" },
+      { "text": "このかばんは 三千円です。", "furigana": "このかばんは {三千円|さんぜんえん}です。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 2,
+    "scene": { "text_ko": "가게에서 마음에 드는 가방을 발견했습니다. 가격을 알고 싶을 때 점원에게 뭐라고 말합니까?" },
+    "script": "N：{店|みせ}で、かばんがいくらか{知|し}りたいです。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "값을 물을 때는 「いくらですか」를 쓴다. 1번 「ください」는 이미 사기로 정했을 때 하는 말이고, 3번은 가격을 알려 주는 점원이 할 말이다. 따라서 정답은 2번이다.",
+    "vocab": [
+      { "word": "いくら", "reading": "いくら", "meaning_ko": "얼마", "kind": "word" },
+      { "word": "知る", "reading": "しる", "meaning_ko": "알다", "kind": "word" }
+    ],
+    "tags": ["쇼핑"]
+  },
+  {
+    "id": "n5-hatsuwa-004",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "朝、学校で先生に会いました。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "おはよう。" },
+      { "text": "こんばんは。" },
+      { "text": "おはようございます。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 3,
+    "scene": { "text_ko": "아침에 학교에서 선생님을 만났습니다. 선생님께 뭐라고 인사합니까?" },
+    "script": "N：{朝|あさ}、{学校|がっこう}で{先生|せんせい}に{会|あ}いました。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "아침 인사는 「おはよう」지만, 선생님처럼 윗사람에게는 정중한 「おはようございます」를 써야 한다. 1번은 친구에게 하는 반말 인사이고, 2번 「こんばんは」는 저녁 인사다. 따라서 정답은 3번이다.",
+    "vocab": [
+      { "word": "おはようございます", "reading": "おはようございます", "meaning_ko": "안녕하세요(아침 인사)", "kind": "expression" },
+      { "word": "こんばんは", "reading": "こんばんは", "meaning_ko": "안녕하세요(저녁 인사)", "kind": "expression" }
+    ],
+    "tags": ["인사", "학교"]
+  },
+  {
+    "id": "n5-hatsuwa-005",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "今から、ごはんを食べます。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "ごちそうさまでした。" },
+      { "text": "おなかが いっぱいです。" },
+      { "text": "いただきます。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 3,
+    "scene": { "text_ko": "지금부터 밥을 먹으려고 합니다. 먹기 전에 뭐라고 말합니까?" },
+    "script": "N：{今|いま}から、ごはんを{食|た}べます。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "밥을 먹기 전에는 「いただきます」라고 말한다. 1번 「ごちそうさまでした」는 다 먹은 뒤의 인사이고, 2번 「おなかがいっぱいです」도 먹은 뒤에 배부를 때 하는 말이다. 따라서 정답은 3번이다.",
+    "vocab": [
+      { "word": "いただきます", "reading": "いただきます", "meaning_ko": "잘 먹겠습니다", "kind": "expression" },
+      { "word": "ごちそうさまでした", "reading": "ごちそうさまでした", "meaning_ko": "잘 먹었습니다", "kind": "expression" },
+      { "word": "おなか", "reading": "おなか", "meaning_ko": "배", "kind": "word" }
+    ],
+    "tags": ["식사", "인사"]
+  },
+  {
+    "id": "n5-hatsuwa-006",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "友だちと会う時間に、おくれました。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "待って ください。", "furigana": "{待|ま}って ください。" },
+      { "text": "おそく なって、ごめんなさい。" },
+      { "text": "いいえ、だいじょうぶですよ。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 2,
+    "scene": { "text_ko": "친구와 만나기로 한 시간에 늦게 도착했습니다. 기다리던 친구에게 뭐라고 말합니까?" },
+    "script": "N：{友|とも}だちと{会|あ}う{時間|じかん}に、おくれました。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "늦어서 사과할 때는 「おそくなって、ごめんなさい」라고 한다. 1번 「待ってください」는 아직 도착하기 전에 기다려 달라고 부탁하는 말이고, 3번은 사과를 받은 친구가 할 말이다. 따라서 정답은 2번이다.",
+    "vocab": [
+      { "word": "おくれる", "reading": "おくれる", "meaning_ko": "늦다, 지각하다", "kind": "word" },
+      { "word": "ごめんなさい", "reading": "ごめんなさい", "meaning_ko": "미안합니다", "kind": "expression" },
+      { "word": "〜くなる", "reading": "〜くなる", "meaning_ko": "〜하게 되다(い형용사)", "kind": "grammar" }
+    ],
+    "tags": ["친구", "약속"]
+  },
+  {
+    "id": "n5-hatsuwa-007",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "部屋が暑いです。友だちに、まどを開けてもらいたいです。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "まどを 開けましょうか。", "furigana": "まどを {開|あ}けましょうか。" },
+      { "text": "まどを 開けても いいですか。", "furigana": "まどを {開|あ}けても いいですか。" },
+      { "text": "まどを 開けて ください。", "furigana": "まどを {開|あ}けて ください。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 3,
+    "scene": { "text_ko": "방이 덥습니다. 친구에게 창문을 열어 달라고 하고 싶습니다. 뭐라고 말합니까?" },
+    "script": "N：{部屋|へや}が{暑|あつ}いです。{友|とも}だちに、まどを{開|あ}けてもらいたいです。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "상대에게 무언가를 해 달라고 부탁할 때는 「〜てください」를 쓴다. 1번 「開けましょうか」는 내가 열어 주겠다는 제안이고, 2번 「開けてもいいですか」는 내가 열어도 되는지 허락을 구하는 말이다. 따라서 정답은 3번이다.",
+    "vocab": [
+      { "word": "開ける", "reading": "あける", "meaning_ko": "열다", "kind": "word" },
+      { "word": "〜てください", "reading": "〜てください", "meaning_ko": "〜해 주세요", "kind": "grammar" },
+      { "word": "〜ましょうか", "reading": "〜ましょうか", "meaning_ko": "〜할까요(제안)", "kind": "grammar" }
+    ],
+    "tags": ["부탁", "친구"]
+  },
+  {
+    "id": "n5-hatsuwa-008",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "友だちから、プレゼントをもらいました。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "わあ、ありがとう。" },
+      { "text": "どういたしまして。" },
+      { "text": "はい、どうぞ。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 1,
+    "scene": { "text_ko": "친구에게서 생일 선물을 받았습니다. 친구에게 뭐라고 말합니까?" },
+    "script": "N：{友|とも}だちから、プレゼントをもらいました。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "선물을 받았을 때는 「ありがとう」라고 고마움을 전한다. 2번 「どういたしまして」는 고맙다는 말을 들은 사람이 하는 대답이고, 3번 「はい、どうぞ」는 선물을 건네는 사람이 할 말이다. 따라서 정답은 1번이다.",
+    "vocab": [
+      { "word": "もらう", "reading": "もらう", "meaning_ko": "받다", "kind": "word" },
+      { "word": "どういたしまして", "reading": "どういたしまして", "meaning_ko": "천만에요", "kind": "expression" },
+      { "word": "どうぞ", "reading": "どうぞ", "meaning_ko": "자, 어서(권할 때)", "kind": "expression" }
+    ],
+    "tags": ["선물", "친구"]
+  },
+  {
+    "id": "n5-hatsuwa-009",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "店で、トイレに行きたいです。店の人に聞きます。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "トイレに 行っても いいですか。", "furigana": "トイレに {行|い}っても いいですか。" },
+      { "text": "すみません、トイレは どこですか。" },
+      { "text": "トイレは あちらです。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 2,
+    "scene": { "text_ko": "가게에서 화장실에 가고 싶은데 어디 있는지 모릅니다. 점원에게 뭐라고 묻습니까?" },
+    "script": "N：{店|みせ}で、トイレに{行|い}きたいです。{店|みせ}の{人|ひと}に{聞|き}きます。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "장소를 물을 때는 「〜はどこですか」를 쓴다. 1번은 가도 되는지 허락을 구하는 말이라 장소를 알 수 없고, 3번 「あちらです」는 위치를 알려 주는 점원이 할 말이다. 따라서 정답은 2번이다.",
+    "vocab": [
+      { "word": "どこ", "reading": "どこ", "meaning_ko": "어디", "kind": "word" },
+      { "word": "あちら", "reading": "あちら", "meaning_ko": "저쪽", "kind": "word" },
+      { "word": "〜てもいいですか", "reading": "〜てもいいですか", "meaning_ko": "〜해도 됩니까", "kind": "grammar" }
+    ],
+    "tags": ["쇼핑", "장소"]
+  },
+  {
+    "id": "n5-hatsuwa-010",
+    "level": "N5",
+    "type": "hatsuwa",
+    "situation": "電車で、おばあさんが立っています。せきをかわります。",
+    "question": "何と言いますか。",
+    "lines": [],
+    "options": [
+      { "text": "どうぞ、すわって ください。" },
+      { "text": "ここに すわっても いいですか。" },
+      { "text": "ありがとうございます。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 1,
+    "scene": { "text_ko": "전철 안에서 할머니가 서 계십니다. 내 자리를 양보하려고 합니다. 할머니께 뭐라고 말합니까?" },
+    "script": "N：{電車|でんしゃ}で、おばあさんが{立|た}っています。せきをかわります。{何|なん}と{言|い}いますか。",
+    "explanation_ko": "자리를 양보할 때는 「どうぞ、すわってください」라고 권한다. 2번은 내가 앉아도 되는지 묻는 말이라 반대 상황이고, 3번 「ありがとうございます」는 자리를 양보받은 할머니가 할 말이다. 따라서 정답은 1번이다.",
+    "vocab": [
+      { "word": "すわる", "reading": "すわる", "meaning_ko": "앉다", "kind": "word" },
+      { "word": "せき", "reading": "せき", "meaning_ko": "자리, 좌석", "kind": "word" },
+      { "word": "立つ", "reading": "たつ", "meaning_ko": "서다", "kind": "word" }
+    ],
+    "tags": ["교통"]
   }
 ]
