@@ -274,7 +274,17 @@ def check_question(q, level_key, cfg, errors, warnings):
 def main():
     ap = argparse.ArgumentParser(description="문제 은행 검증")
     ap.add_argument("--level", choices=["n5", "n4", "n3"], help="한 레벨만 검사")
+    ap.add_argument("--batch", help="아직 합치지 않은 배치 파일(문항 배열). 해당 레벨 파일 뒤에 붙여서 함께 검사한다")
     args = ap.parse_args()
+
+    batch = []
+    if args.batch:
+        batch = json.loads(Path(args.batch).read_text(encoding="utf-8"))
+        levels_in_batch = {str(q.get("id", "")).split("-")[0] for q in batch}
+        if len(levels_in_batch) != 1 or not levels_in_batch <= {"n5", "n4", "n3"}:
+            print(f"배치의 id 레벨이 하나가 아님: {sorted(levels_in_batch)}")
+            sys.exit(1)
+        args.level = levels_in_batch.pop()
 
     cfg = load_listening_config()
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
@@ -295,6 +305,8 @@ def main():
         except json.JSONDecodeError as e:
             errors.append(f"{path.name}: JSON 파싱 실패 — {e}")
             continue
+        if batch:
+            items = items + batch
 
         # 1) 스키마 (구조) — 통과하지 못한 문항은 세부 검사를 건너뛴다
         bad = set()

@@ -201,6 +201,18 @@ async function run(win) {
   await key('2');
   await shot('06-N5-no-furigana');
 
+  // 그림 선택지: 2×2 그리드에 인라인 SVG 4개 (currentColor가 테마 글자색을 따르도록 인라인)
+  const imgQs = await js('["N5","N4","N3"].flatMap(l => Listening.questions(l)).filter(q => q.options.every(o => o.image)).map(q => q.id)');
+  for (const id of imgQs) {
+    await js(`(() => { const q = ["N5","N4","N3"].flatMap(l => Listening.questions(l)).find(x => x.id === ${JSON.stringify(id)});
+      QuestionView.show(q, { crumb: "", pos: "", backLabel: "←", onBack: () => App.showHome(), autoplay: false }); return true; })()`);
+    await sleep(500);
+    const g = await js('({ grid: !!document.querySelector(".options.grid"), svgs: document.querySelectorAll(".options.grid .svg-box svg").length, color: getComputedStyle(document.querySelector(".options.grid .svg-box svg") || document.body).color })');
+    check(`그림 선택지 ${id}: 2×2 그리드에 SVG 4개`, g.grid && g.svgs === 4, `${g.svgs}개, 글자색 ${g.color}`);
+  }
+  await shot('06b-image-options');
+  await js('App.showHome()');
+
   // 창이 숨겨진 상태에서도 구간 재생이 끝에서 멈추는지 (requestAnimationFrame이 멈추는 상황)
   const seg = await js('(() => { const q = Listening.questions("N5").find(x => x.type === "kadai"); return Listening.audioInfo(q).lines[1]; })()');
   win.hide();
