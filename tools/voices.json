@@ -1,0 +1,51 @@
+{
+  "_comment": "화자 → edge-tts 음성 매핑, 음성 안의 쉼(초), 출력 형식. N·F2·M2는 voice_compare.py 비교로 확정 (N-1, F2-1, M2-1).",
+
+  "voices": {
+    "N":  { "voice": "ja-JP-NanamiNeural", "rate": "-5%",  "pitch": "+0Hz" },
+    "F":  { "voice": "ja-JP-NanamiNeural", "rate": "+0%",  "pitch": "+0Hz" },
+    "M":  { "voice": "ja-JP-KeitaNeural",  "rate": "+0%",  "pitch": "+0Hz" },
+    "F2": { "voice": "ja-JP-NanamiNeural", "rate": "+0%",  "pitch": "+10Hz" },
+    "M2": { "voice": "ja-JP-KeitaNeural",  "rate": "-5%",  "pitch": "-10Hz" }
+  },
+
+  "pauses": {
+    "leadIn": 0.5,
+    "situationToDialogue": 1.0,
+    "betweenLines": 0.6,
+    "dialogueToQuestion": 1.0,
+    "questionToOptions": 1.0,
+    "afterOptionNumber": 0.4,
+    "betweenOptions": 1.0,
+    "tail": 0.5
+  },
+
+  "optionNumbers": ["いち", "に", "さん", "よん"],
+
+  "tts": { "retries": 3, "concurrency": 4 },
+
+  "output": { "sampleRate": 24000, "bitrate": "64k", "loudnorm": "I=-16:TP=-1.5:LRA=11" },
+
+  "compare": {
+    "sentence": "すみません、来週の会議の資料は、もうできていますか。",
+    "gap": 0.8,
+    "reference": { "N": "F", "F2": "F", "M2": "M" },
+    "candidates": {
+      "N": [
+        { "label": "N-1 Nanami 느리게 (지시서 예시)", "voice": "ja-JP-NanamiNeural", "rate": "-5%",  "pitch": "+0Hz" },
+        { "label": "N-2 Nanami 더 느리고 낮게",        "voice": "ja-JP-NanamiNeural", "rate": "-10%", "pitch": "-10Hz" },
+        { "label": "N-3 Nanami 보통 속도, 많이 낮게",  "voice": "ja-JP-NanamiNeural", "rate": "+0%",  "pitch": "-20Hz" }
+      ],
+      "F2": [
+        { "label": "F2-1 Nanami 조금 높게 (지시서 예시)", "voice": "ja-JP-NanamiNeural", "rate": "+0%", "pitch": "+10Hz" },
+        { "label": "F2-2 Nanami 높고 빠르게 (젊은 여성)",  "voice": "ja-JP-NanamiNeural", "rate": "+5%", "pitch": "+20Hz" },
+        { "label": "F2-3 Nanami 낮고 느리게 (나이 든 여성)", "voice": "ja-JP-NanamiNeural", "rate": "-5%", "pitch": "-15Hz" }
+      ],
+      "M2": [
+        { "label": "M2-1 Keita 조금 낮고 느리게",         "voice": "ja-JP-KeitaNeural", "rate": "-5%",  "pitch": "-10Hz" },
+        { "label": "M2-2 Keita 높고 빠르게 (젊은 남성)",   "voice": "ja-JP-KeitaNeural", "rate": "+5%",  "pitch": "+12Hz" },
+        { "label": "M2-3 Keita 많이 낮고 느리게 (나이 든 남성)", "voice": "ja-JP-KeitaNeural", "rate": "-10%", "pitch": "-20Hz" }
+      ]
+    }
+  }
+}

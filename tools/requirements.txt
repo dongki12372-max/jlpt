@@ -1,3 +1,4 @@
 edge-tts==7.3.1
 pydub==0.25.1
 jsonschema==4.26.0
+audioop-lts==0.2.2  # Python 3.13+에서 pydub에 필요
