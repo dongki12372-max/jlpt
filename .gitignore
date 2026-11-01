@@ -16,3 +16,6 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# 스모크 테스트 출력 (SMOKE_OUT 미지정 시)
+smoke-out/

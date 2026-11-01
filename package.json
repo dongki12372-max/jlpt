@@ -1,0 +1,15 @@
+{
+  "name": "jlpt-listening",
+  "version": "0.1.0",
+  "description": "JLPT 청해 연습 — 오프라인 데스크톱 앱 (앱 이름은 app/config.js의 appName)",
+  "main": "app/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "smoke": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11"
+  }
+}
