@@ -420,5 +420,261 @@
       { "word": "立つ", "reading": "たつ", "meaning_ko": "서다", "kind": "word" }
     ],
     "tags": ["교통"]
+  },
+  {
+    "id": "n5-sokuji-003",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "F", "text": "木村さん、お元気ですか。" }
+    ],
+    "options": [
+      { "text": "ええ、元気です。山田さんは？", "furigana": "ええ、{元気|げんき}です。{山田|やまだ}さんは？" },
+      { "text": "はい、元気でした。", "furigana": "はい、{元気|げんき}でした。" },
+      { "text": "いいえ、どういたしまして。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 1,
+    "script": "F：{木村|きむら}さん、お{元気|げんき}ですか。",
+    "explanation_ko": "「お元気ですか」는 지금의 안부를 묻는 인사이므로 「ええ、元気です」라고 답하고 상대의 안부도 되묻는 1이 자연스럽다. 2는 과거형이라 시제가 맞지 않고, 3은 감사 인사에 대한 대답이다. 따라서 정답은 1이다.",
+    "vocab": [
+      { "word": "元気", "reading": "げんき", "meaning_ko": "건강함, 기운참", "kind": "word" },
+      { "word": "お元気ですか", "reading": "おげんきですか", "meaning_ko": "잘 지내세요?", "kind": "expression" }
+    ],
+    "tags": ["인사"]
+  },
+  {
+    "id": "n5-sokuji-004",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "すみません、このかさ、いくらですか。" }
+    ],
+    "options": [
+      { "text": "はい、かさです。" },
+      { "text": "あそこにあります。" },
+      { "text": "800円です。", "furigana": "800{円|えん}です。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 3,
+    "script": "M：すみません、このかさ、いくらですか。",
+    "explanation_ko": "「いくらですか」는 값을 묻는 질문이므로 가격을 말하는 3이 대답이다. 1은 무엇인지, 2는 어디에 있는지에 대한 대답이라 질문과 맞지 않는다. 1은 질문에 나온 「かさ」를 그대로 써서 헷갈리게 하는 함정이다. 따라서 정답은 3이다.",
+    "vocab": [
+      { "word": "かさ", "reading": "かさ", "meaning_ko": "우산", "kind": "word" },
+      { "word": "いくら", "reading": "いくら", "meaning_ko": "얼마", "kind": "word" }
+    ],
+    "tags": ["쇼핑"]
+  },
+  {
+    "id": "n5-sokuji-005",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "あした、ひまですか。" }
+    ],
+    "options": [
+      { "text": "ええ、ひまです。どうしてですか。" },
+      { "text": "はい、ひまでした。" },
+      { "text": "じゃあ、いっしょに行きましょう。", "furigana": "じゃあ、いっしょに{行|い}きましょう。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 1,
+    "script": "M：あした、ひまですか。",
+    "explanation_ko": "「あした、ひまですか」는 권유하기 전에 상대의 예정을 묻는 말이다. 한가하다고 답하고 이유를 되묻는 1이 자연스럽다. 2는 과거형이라 「あした」와 맞지 않고, 3은 아직 받지도 않은 권유에 대답하고 있다. 따라서 정답은 1이다.",
+    "vocab": [
+      { "word": "ひま", "reading": "ひま", "meaning_ko": "한가함", "kind": "word" },
+      { "word": "どうして", "reading": "どうして", "meaning_ko": "왜, 어째서", "kind": "word" }
+    ],
+    "tags": ["권유"]
+  },
+  {
+    "id": "n5-sokuji-006",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "F", "text": "この辞書、ありがとうございました。" }
+    ],
+    "options": [
+      { "text": "はい、どうぞ。使ってください。", "furigana": "はい、どうぞ。{使|つか}ってください。" },
+      { "text": "じゃあ、あした返します。", "furigana": "じゃあ、あした{返|かえ}します。" },
+      { "text": "いいえ。また使ってくださいね。", "furigana": "いいえ。また{使|つか}ってくださいね。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 3,
+    "script": "F：この{辞書|じしょ}、ありがとうございました。",
+    "explanation_ko": "여자는 빌린 사전을 돌려주면서 고맙다고 말하고 있다. 빌려준 사람은 「いいえ」라고 받고 「また使ってくださいね」라고 말하는 3이 자연스럽다. 1은 처음 빌려줄 때 하는 말이고, 2는 빌린 사람이 할 말이라 입장이 뒤바뀌었다. 따라서 정답은 3이다.",
+    "vocab": [
+      { "word": "辞書", "reading": "じしょ", "meaning_ko": "사전", "kind": "word" },
+      { "word": "返す", "reading": "かえす", "meaning_ko": "돌려주다", "kind": "word" },
+      { "word": "使う", "reading": "つかう", "meaning_ko": "사용하다", "kind": "word" }
+    ],
+    "tags": ["감사", "학교"]
+  },
+  {
+    "id": "n5-sokuji-007",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "おいしいおかし、ありがとうございました。" }
+    ],
+    "options": [
+      { "text": "はい、いただきます。" },
+      { "text": "いいえ、どういたしまして。" },
+      { "text": "ええ、おいしかったです。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 2,
+    "script": "M：おいしいおかし、ありがとうございました。",
+    "explanation_ko": "남자는 과자를 받은 것에 대해 고맙다고 말하고 있다. 과자를 준 사람은 「いいえ、どういたしまして」라고 답하는 것이 자연스럽다. 1은 음식을 받을 때, 3은 먹은 사람이 감상을 말할 때 쓰는 말이라 모두 받은 쪽의 말이다. 따라서 정답은 2이다.",
+    "vocab": [
+      { "word": "おかし", "reading": "おかし", "meaning_ko": "과자", "kind": "word" },
+      { "word": "どういたしまして", "reading": "どういたしまして", "meaning_ko": "천만에요", "kind": "expression" },
+      { "word": "いただきます", "reading": "いただきます", "meaning_ko": "잘 먹겠습니다", "kind": "expression" }
+    ],
+    "tags": ["감사"]
+  },
+  {
+    "id": "n5-sokuji-008",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "F", "text": "田中さん、いっしょに帰りませんか。" }
+    ],
+    "options": [
+      { "text": "すみません、まだ仕事がありますから。", "furigana": "すみません、まだ{仕事|しごと}がありますから。" },
+      { "text": "はい、もう帰りました。", "furigana": "はい、もう{帰|かえ}りました。" },
+      { "text": "じゃあ、また来てください。", "furigana": "じゃあ、また{来|き}てください。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 1,
+    "script": "F：{田中|たなか}さん、いっしょに{帰|かえ}りませんか。",
+    "explanation_ko": "「〜ませんか」는 함께 가자는 권유다. 1은 「すみません」이라고 사과하고 아직 일이 남았다는 이유를 들어 정중하게 거절하고 있다. 2는 이미 집에 갔다는 과거의 대답이라 지금 권유를 받는 상황과 맞지 않고, 3은 손님을 배웅할 때 하는 다른 상황의 인사다. 따라서 정답은 1이다.",
+    "vocab": [
+      { "word": "帰る", "reading": "かえる", "meaning_ko": "돌아가다, 귀가하다", "kind": "word" },
+      { "word": "仕事", "reading": "しごと", "meaning_ko": "일", "kind": "word" },
+      { "word": "〜ませんか", "reading": "〜ませんか", "meaning_ko": "~하지 않을래요?(권유)", "kind": "grammar" }
+    ],
+    "tags": ["권유", "회사"]
+  },
+  {
+    "id": "n5-sokuji-009",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "日曜日、どこへ行きますか。" }
+    ],
+    "options": [
+      { "text": "はい、行きます。", "furigana": "はい、{行|い}きます。" },
+      { "text": "バスで行きます。", "furigana": "バスで{行|い}きます。" },
+      { "text": "海へ行きます。", "furigana": "{海|うみ}へ{行|い}きます。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 3,
+    "script": "M：{日曜日|にちようび}、どこへ{行|い}きますか。",
+    "explanation_ko": "「どこへ」는 가는 장소를 묻는 말이므로 장소를 말하는 3이 대답이다. 1은 「はい」로 답하고 있어 「行きますか」만 들은 대답이고, 2는 무엇을 타고 가는지에 대한 대답이다. 따라서 정답은 3이다.",
+    "vocab": [
+      { "word": "日曜日", "reading": "にちようび", "meaning_ko": "일요일", "kind": "word" },
+      { "word": "海", "reading": "うみ", "meaning_ko": "바다", "kind": "word" },
+      { "word": "どこへ", "reading": "どこへ", "meaning_ko": "어디에(로)", "kind": "word" }
+    ],
+    "tags": ["여가"]
+  },
+  {
+    "id": "n5-sokuji-010",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "すみません、この席、だれかいますか。" }
+    ],
+    "options": [
+      { "text": "ええ、すわってもいいですか。" },
+      { "text": "いいえ、どうぞ。" },
+      { "text": "はい、だれですか。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 2,
+    "script": "M：すみません、この{席|せき}、だれかいますか。",
+    "explanation_ko": "남자는 빈자리인지 묻고 있다. 아무도 없다고 「いいえ」라고 답하고 앉으라고 권하는 2가 자연스럽다. 1은 앉고 싶은 사람이 할 말이라 입장이 뒤바뀌었고, 3은 질문의 「だれ」를 그대로 써서 헷갈리게 하는 함정이다. 따라서 정답은 2이다.",
+    "vocab": [
+      { "word": "席", "reading": "せき", "meaning_ko": "자리, 좌석", "kind": "word" },
+      { "word": "すわる", "reading": "すわる", "meaning_ko": "앉다", "kind": "word" },
+      { "word": "だれか", "reading": "だれか", "meaning_ko": "누군가", "kind": "word" }
+    ],
+    "tags": ["허락"]
+  },
+  {
+    "id": "n5-sokuji-011",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "F", "text": "このケーキ、おいしいですね。" }
+    ],
+    "options": [
+      { "text": "そうですね。あまくておいしいです。" },
+      { "text": "ええ、おいしかったですか。" },
+      { "text": "はい、ケーキを二つください。", "furigana": "はい、ケーキを{二|ふた}つください。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "M",
+    "answer": 1,
+    "script": "F：このケーキ、おいしいですね。",
+    "explanation_ko": "같이 먹으면서 맛있다고 말하는 상대에게는 「そうですね」라고 맞장구치는 1이 자연스럽다. 2는 아직 먹고 있는데 과거형으로 상대에게 되묻고 있어 맞지 않고, 3은 가게에서 주문할 때 하는 말이다. 따라서 정답은 1이다.",
+    "vocab": [
+      { "word": "あまい", "reading": "あまい", "meaning_ko": "달다", "kind": "word" },
+      { "word": "そうですね", "reading": "そうですね", "meaning_ko": "그렇네요(맞장구)", "kind": "expression" }
+    ],
+    "tags": ["음식"]
+  },
+  {
+    "id": "n5-sokuji-012",
+    "level": "N5",
+    "type": "sokuji",
+    "situation": "",
+    "question": "",
+    "lines": [
+      { "speaker": "M", "text": "すみません、今、何時ですか。" }
+    ],
+    "options": [
+      { "text": "2時間です。", "furigana": "2{時間|じかん}です。" },
+      { "text": "えっと、4時10分です。", "furigana": "えっと、4{時|じ}10{分|ぷん}です。" },
+      { "text": "4時に終わります。", "furigana": "4{時|じ}に{終|お}わります。" }
+    ],
+    "spokenOptions": true,
+    "optionSpeaker": "F",
+    "answer": 2,
+    "script": "M：すみません、{今|いま}、{何時|なんじ}ですか。",
+    "explanation_ko": "「何時ですか」는 지금 시각을 묻는 말이므로 시각을 말하는 2가 대답이다. 1의 「2時間」은 걸리는 시간이고, 3은 언제 끝나는지에 대한 대답이다. 2와 3은 같은 「4時」가 나오지만 3은 지금 시각이 아니다. 따라서 정답은 2이다.",
+    "vocab": [
+      { "word": "何時", "reading": "なんじ", "meaning_ko": "몇 시", "kind": "word" },
+      { "word": "時間", "reading": "じかん", "meaning_ko": "시간(동안)", "kind": "word" },
+      { "word": "終わる", "reading": "おわる", "meaning_ko": "끝나다", "kind": "word" }
+    ],
+    "tags": ["시간"]
   }
 ]
