@@ -15,6 +15,7 @@ module.exports = {
     '!data/**/schema.json',
     'audio/**',
     '!audio/**/_compare/**',
+    '!audio/**/_check/**',   // 읽기 검사용 가나 음성 캐시 (check_vocab_tts.py)
   ],
   mac: {
     target: [{ target: 'dmg', arch: 'universal' }],

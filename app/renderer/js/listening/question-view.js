@@ -168,8 +168,14 @@ const QuestionView = (() => {
                   <span class="txt">${Util.furigana(txt)}</span>
                 </li>`;
       }).join('');
-      const vocab = q.vocab.map((v) => `
-        <tr><td lang="ja">${Util.esc(v.word)}</td><td lang="ja" class="dim">${Util.esc(v.reading)}</td><td>${Util.esc(v.meaning_ko)}</td></tr>`).join('');
+      // 단어장에 있는 단어(문자·어휘 영역)는 표시하고 ▶ 단어 음성
+      const inDeck = (v) => (typeof Vocab !== 'undefined' && v.kind !== 'grammar' ? Vocab.word(`${v.word}|${v.reading}`) : null);
+      const vocab = q.vocab.map((v) => {
+        const w = inDeck(v);
+        const deck = w ? `<button class="btn-mini" data-word-audio="${Util.esc(w.key)}" title="단어 음성">▶</button> <span class="in-deck">단어장에 있음</span>` : '';
+        return `
+        <tr><td lang="ja">${Util.esc(v.word)}</td><td lang="ja" class="dim">${Util.esc(v.reading)}</td><td>${Util.esc(v.meaning_ko)}</td><td class="num">${deck}</td></tr>`;
+      }).join('');
 
       $('[data-el="result"]').innerHTML = `
         <div class="verdict ${verdict[0]}">${verdict[1]}</div>
@@ -190,6 +196,7 @@ const QuestionView = (() => {
         </section>`;
 
       if (opts.onNext) $('[data-act="next"]').addEventListener('click', opts.onNext);
+      $$('[data-word-audio]').forEach((b) => b.addEventListener('click', () => Clip.play(Vocab.wordAudio(Vocab.word(b.dataset.wordAudio)))));
       $('[data-el="furi"]').addEventListener('change', (e) => { prefs().furigana = e.target.checked; applyFurigana(); });
       lineEls = $$('.script .line');
       if (canReplay) {
