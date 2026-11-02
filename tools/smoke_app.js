@@ -47,7 +47,11 @@ function finish() {
 
 async function run(win) {
   const wc = win.webContents;
-  const js = (code) => wc.executeJavaScript(code);
+  // 멈춤을 실패로 드러내기 위해 15초 제한 (어느 코드에서 멈췄는지 남김)
+  const js = (code) => Promise.race([
+    wc.executeJavaScript(code),
+    sleep(15000).then(() => { throw new Error(`executeJavaScript 15초 응답 없음: ${code.slice(0, 120)}`); }),
+  ]);
   const click = (sel) => js(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return false; el.click(); return true; })()`);
   const exists = (sel) => js(`!!document.querySelector(${JSON.stringify(sel)})`);
   const text = (sel) => js(`(document.querySelector(${JSON.stringify(sel)}) || {}).textContent || ''`);
@@ -164,10 +168,18 @@ async function run(win) {
       await key(String(second.answer));
       const v2 = await js('(() => { const v = document.querySelector(".verdict"); return v ? v.className : ""; })()');
       check(`${tag}: 키보드로 정답 선택`, v2.includes('ok'));
+      // 나머지 문항: 키보드로 정답 → Enter (문항 수는 은행 크기에 따라 다름)
+      for (let k = 2; k < qdata.length; k++) {
+        await key('Enter');
+        await sleep(300);
+        await key(String(qdata[k].answer));
+        await sleep(100);
+      }
       await key('Enter');
       await sleep(300);
       const done = await text('.done h2');
-      check(`${tag}: 결과 화면 1/2`, done.startsWith('1 / 2'), done);
+      const expect = `${qdata.length - 1} / ${qdata.length}`;
+      check(`${tag}: 결과 화면 ${expect}`, done.startsWith(expect), done);
       if (level === 'N3' && type === 'sokuji') await shot('05-done');
       await click('[data-act="back"]');
       await sleep(200);
@@ -214,10 +226,12 @@ async function run(win) {
   await js('App.showHome()');
 
   // 창이 숨겨진 상태에서도 구간 재생이 끝에서 멈추는지 (requestAnimationFrame이 멈추는 상황)
-  const seg = await js('(() => { const q = Listening.questions("N5").find(x => x.type === "kadai"); return Listening.audioInfo(q).lines[1]; })()');
+  // 홈으로 가면 Player.stop()으로 음성이 비워지므로, 문항 화면처럼 먼저 음성을 불러 둔다
+  const seg = await js(`(async () => { const q = Listening.questions("N5").find(x => x.type === "kadai"); Player.load(Listening.audioUrl(q));
+    for (let i = 0; i < 50 && !Player.duration; i++) await new Promise(r => setTimeout(r, 100)); return Listening.audioInfo(q).lines[1]; })()`);
   win.hide();
   await sleep(300);
-  await js(`Player.playSegment(${seg[0]}, ${seg[1]})`);
+  await js(`Player.playSegment(${seg[0]}, ${seg[1]}); true`);  // play() 프로미스는 기다리지 않음 (앱도 기다리지 않는다)
   await sleep(((seg[1] - seg[0]) / 1.2) * 1000 + 700);
   const ph = await player();
   // 숨긴 상태에서 새 음성 시작 (실전 모의에서 창이 가려진 채 다음 문항으로 넘어가는 상황)
@@ -247,8 +261,12 @@ async function examTests(win, { js, click, exists, text, key, shot, player }) {
     await sleep(200);
     const types = await js(`Listening.levelTypes(${JSON.stringify(level)})`);
     const startRows = await js('document.querySelectorAll(".table tbody tr").length');
-    const total = await js(`Listening.questions(${JSON.stringify(level)}).length`);
-    check(`${tag}: 시작 화면 구성 ${types.length}유형, 문항 부족 안내`, startRows === types.length && await exists('.notice'));
+    // 출제 수 = 유형별 min(정식 구성, 은행 문항 수). 은행이 부족할 때만 안내가 나온다.
+    const comp = await js(`(() => { const lv = ${JSON.stringify(level)}; const ex = Listening.cfg.levels[lv].exam; const qs = Listening.questions(lv);
+      let want = 0, total = 0; for (const t in ex) { want += ex[t]; total += Math.min(ex[t], qs.filter(q => q.type === t).length); } return { want, total }; })()`);
+    const total = comp.total;
+    const short = comp.total < comp.want;
+    check(`${tag}: 시작 화면 구성 ${types.length}유형, ${total}문항, 부족 안내 ${short ? '있음' : '없음'}`, startRows === types.length && (await exists('.notice')) === short);
     if (level === 'N3') await shot('07-exam-start-N3');
 
     await click('[data-act="begin"]');
@@ -386,7 +404,9 @@ async function storageTests(win, { js, click, exists, text, key, shot, player })
   await sleep(200);
   check('홈: 최근 실전 모의 점수 표시', await exists('[data-el="last-exam"]'), await text('.last-exam'));
   const summary = await js('Array.from(document.querySelectorAll("[data-el=summary] tbody tr")).map(r => r.children[2].textContent.trim())');
-  check('홈: 유형별 푼 문항 수', summary.every((x) => x === '2 / 2'), summary.join(','));
+  // 유형별 연습에서 모든 문항을 풀었으므로 유형마다 '은행 문항 수 / 은행 문항 수'
+  const expectSummary = await js('Listening.levelTypes("N3").map(t => { const n = Listening.questions("N3").filter(q => q.type === t).length; return `${n} / ${n}`; })');
+  check('홈: 유형별 푼 문항 수', summary.join(',') === expectSummary.join(','), summary.join(','));
   await shot('11-home-stats-N3');
 
   // 기록이 창을 다시 불러와도 유지됨
