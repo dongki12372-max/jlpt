@@ -7,9 +7,11 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "env -u ELECTRON_RUN_AS_NODE electron .",
-    "smoke": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js"
+    "smoke": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js",
+    "dist": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --config electron-builder.config.js"
   },
   "devDependencies": {
-    "electron": "^33.4.11"
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   }
 }

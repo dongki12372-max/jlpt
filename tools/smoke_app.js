@@ -356,7 +356,7 @@ async function examRealtime(level, { js, click, exists }) {
   const segs = [];   // [{ name, start, d }]
   const answered = new Set();
   let maxIdleGap = 0, lastActive = Date.now();
-  while (!(await exists('.score-card')) && Date.now() - t0 < 20 * 60000) {
+  while (!(await exists('.score-card')) && Date.now() - t0 < 60 * 60000) {  // 정식 구성은 25~40분
     const s = await js(`(() => ({ phase: document.querySelector("[data-el=status]").dataset.phase,
       qid: (document.querySelector("[data-el=options]") || {}).dataset?.qid || "", src: Player.src, d: Player.duration, paused: Player.paused }))()`);
     const name = s.src.split('/').pop();
