@@ -52,7 +52,55 @@
         examScoreMax: 60,                          // 실전 모의 환산 점수 만점 (정답률 × 60)
         passMark: 19,                              // 기준점 표시선
       },
-      vocab:   { label_ko: '문자·어휘', label_ja: '文字・語彙', enabled: false },
+      vocab: {
+        label_ko: '문자·어휘', label_ja: '文字・語彙', enabled: true,
+
+        // 문제 유형 (모두 4지선다). 用法은 N4·N3만. instruction = 유형 첫머리 지시문 (공식 문구가 아니라 같은 취지로 새로 씀)
+        types: {
+          yomi:     { label_ja: '漢字読み',   label_ko: '한자 읽기', instruction: '＿＿＿の　ことばは　ひらがなで　どう　よみますか。1〜4から　いちばん　あう　ものを　えらんで　ください。' },
+          hyouki:   { label_ja: '表記',       label_ko: '표기', instruction: '＿＿＿の　ことばを　かんじで　かくと　どれですか。1〜4から　えらんで　ください。' },
+          bunmyaku: { label_ja: '文脈規定',   label_ko: '문맥 규정', instruction: '（　　）に　いれる　ことばとして　いちばん　あう　ものを　1〜4から　えらんで　ください。' },
+          iikae:    { label_ja: '言い換え類義', label_ko: '유의 표현', instruction: '＿＿＿の　ことばと　だいたい　おなじ　いみの　ものは　どれですか。1〜4から　えらんで　ください。' },
+          youhou:   { label_ja: '用法',       label_ko: '용법', instruction: 'つぎの　ことばの　つかいかたが　いちばん　ただしい　ぶんを　1〜4から　えらんで　ください。' },
+        },
+        typeOrder: ['yomi', 'hyouki', 'bunmyaku', 'iikae', 'youhou'],
+        optionCount: 4,
+        // 레벨별 실전 구성. exam에 없는 유형은 그 레벨에서 출제 금지 (validate_vocab.py가 검사).
+        levels: {
+          N5: { examMinutes: 20, exam: { yomi: 7, hyouki: 5, bunmyaku: 6, iikae: 3 } },
+          N4: { examMinutes: 25, exam: { yomi: 7, hyouki: 5, bunmyaku: 8, iikae: 4, youhou: 4 } },
+          N3: { examMinutes: 30, exam: { yomi: 8, hyouki: 6, bunmyaku: 11, iikae: 5, youhou: 5 } },
+        },
+        maxSameTargetPerType: 3,                   // 한 레벨에서 같은 단어가 같은 유형의 targets로 나오는 최대 횟수
+
+        // 단어 데이터
+        wordTargets: { N5: 700, N4: 650, N3: 1800 },  // 레벨별 신규 단어 목표 수
+        exampleLength: { N5: 15, N4: 20, N3: 30 },    // 예문 길이 기준(글자, 안팎) — 1.6배를 넘으면 경고
+        meaningMax: 3,                                 // meaning_ko 뜻 개수 최대
+        pos: {
+          noun: '명사', verb: '동사', 'i-adj': 'い형용사', 'na-adj': 'な형용사',
+          adverb: '부사', katakana: '외래어', other: '기타',
+        },
+
+        // SRS (SM-2 단순화). 간격 단위: 학습 단계는 분, 복습은 일
+        srs: {
+          learningStepsMinutes: [1, 10],   // 새 카드·「다시」 뒤 학습 단계
+          graduatingIntervalDays: 1,       // 학습 단계를 마친 뒤 첫 간격
+          easyIntervalDays: 4,             // 학습 중 「쉬움」이면 바로 이 간격
+          startingEase: 2.5,
+          minEase: 1.3,
+          hardMultiplier: 1.2,             // 「어려움」: 간격 × 1.2
+          hardEaseDelta: -0.15,
+          easyBonus: 1.3,                  // 「쉬움」: 간격 × 계수 × 1.3
+          easyEaseDelta: 0.15,
+          againEaseDelta: -0.2,            // 복습 카드 「다시」
+          weakLapses: 8,                   // 「다시」를 이 횟수 이상 누른 카드 = 약한 단어
+          newPerDay: 20,                   // 하루 새 카드 수 (기본값, 설정에서 변경 가능)
+          newPerDayOptions: [10, 20, 30, 50],
+          dayStartHour: 4,                 // 하루의 경계 (새벽 4시)
+          learnAheadMinutes: 20,           // 남은 카드가 학습 단계뿐이면 이 시간 안에 올 카드를 앞당겨 보여 준다
+        },
+      },
       grammar: { label_ko: '문법',     label_ja: '文法',     enabled: false },
     },
 

@@ -273,3 +273,91 @@ rt { font-size: 0.55em; color: var(--text-dim); }
 .review-list .link { margin-left: auto; }
 .empty p { margin: 0; }
 .result-list .badge { margin-left: 6px; font-size: 11px; padding: 0 6px; }
+
+/* ============== 문자·어휘 · 단어장 ============== */
+.deck-home { text-align: center; }
+.deck-counts { display: flex; justify-content: center; gap: 48px; margin: 8px 0 16px; }
+.deck-counts > div { display: flex; flex-direction: column; align-items: center; }
+.deck-counts .big { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.deck-home .primary { margin-top: 8px; padding: 10px 32px; }
+tr.current td { color: var(--accent); }
+
+.flash { text-align: center; padding: 28px 20px 24px; min-height: 260px; }
+.card-tag { color: var(--text-dim); font-size: 13px; margin-bottom: 18px; }
+.card-tag .badge { margin-left: 4px; background: var(--surface-2); padding: 1px 8px; font-weight: 500; }
+.card-word { font-size: 44px; font-weight: 600; line-height: 1.5; }
+.card-word rt { font-size: 15px; font-weight: 400; color: var(--text-dim); }
+.card-reading { font-size: 20px; margin: 8px 0 4px; }
+.card-meaning { font-size: 19px; margin: 4px 0 16px; }
+.flash .example, .word-detail .example { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px; text-align: left; }
+.example p { margin: 2px 0; }
+.example p[lang="ja"] { font-size: 17px; }
+.btn-mini { background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; font-size: 11px; padding: 1px 8px; vertical-align: middle; }
+.flash-actions { margin-top: 14px; text-align: center; }
+.flash-actions > .primary { padding: 10px 40px; }
+.rate-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.rate-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; }
+.rate-again { border-color: var(--ng); }
+.rate-good { border-color: var(--accent); }
+.rate-easy { border-color: var(--ok); }
+.cnt-new { color: var(--accent); }
+.cnt-learn { color: var(--ng); }
+.cnt-review { color: var(--ok); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters select, .filters input { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit; }
+.filters input { flex: 1; min-width: 180px; }
+.word-list { list-style: none; padding: 0; margin: 8px 0; }
+.word-row { display: grid; grid-template-columns: 130px 130px 1fr 36px 72px; gap: 8px; align-items: center; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); padding: 7px 4px; }
+.word-row:hover { background: var(--surface); }
+.word-row .w { font-size: 17px; }
+.word-row .r { color: var(--text-dim); }
+.st { font-size: 12px; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); text-align: center; }
+.st-learning { color: var(--ng); }
+.st-review { color: var(--ok); }
+.st-weak { background: var(--ng-bg); color: var(--ng); }
+ul.plain { list-style: none; padding: 0; margin: 4px 0; }
+ul.plain li { padding: 3px 0; }
+.in-deck { font-size: 12px; color: var(--ok); }
+
+/* ============== 문자·어휘 · 문제 ============== */
+.vq .instruction { font-size: 14px; color: var(--text-dim); margin: 0 0 14px; }
+.type-label { display: inline-block; background: var(--surface-2); color: var(--text); border-radius: 6px; padding: 0 8px; margin-right: 6px; font-size: 13px; }
+.vq .stem { font-size: 21px; line-height: 2.1; margin: 8px 0 18px; }
+.under { text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.blank { letter-spacing: 0.2em; color: var(--accent); }
+.youhou-word { font-size: 30px; font-weight: 600; margin: 4px 0 16px; }
+.options.sentences .opt .opt-text { font-size: 16px; line-height: 2; }
+.vq .opt .opt-text { font-size: 18px; }
+.opt.chosen { border-color: var(--accent); background: rgba(91, 157, 255, 0.12); }
+.opt.chosen .num { background: var(--accent); color: #0b1830; }
+.explain .full { font-size: 19px; line-height: 2.1; }
+.opt-notes { list-style: none; padding: 0; margin: 0; }
+.opt-notes li { display: grid; grid-template-columns: 28px minmax(120px, auto) 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); align-items: baseline; }
+.opt-notes li.ok .num { color: var(--ok); font-weight: 700; }
+.opt-notes li.ng .num { color: var(--ng); font-weight: 700; }
+.opt-notes .note { color: var(--text-dim); font-size: 14px; }
+.opt-notes li.ok .note { color: var(--ok); }
+.mini-cards { display: flex; flex-wrap: wrap; gap: 10px; }
+.mini-card { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border-radius: 8px; padding: 6px 12px; }
+.mini-card .w { font-size: 18px; }
+.small-btn { font-size: 12px; padding: 2px 10px; margin-left: 10px; }
+
+.exam-top .timer { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 600; }
+.exam-top .timer.warn { color: var(--ng); }
+.exam-top .primary { margin-left: 12px; }
+.qnav { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 12px 0 4px; }
+.qnav-type { font-size: 12px; color: var(--text-dim); margin: 0 4px 0 10px; }
+.qnav-type:first-child { margin-left: 0; }
+.qnav-btn { width: 30px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; padding: 0; }
+.qnav-btn.answered { background: var(--surface-2); color: var(--accent); border-color: var(--accent); }
+.qnav-btn.unanswered { color: var(--text-dim); }
+.qnav-btn.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+.exam-q .qno { margin: 0; color: var(--text-dim); }
+.score-big { font-size: 40px; font-weight: 700; }
+.exam-list button.link { display: flex; gap: 10px; align-items: baseline; color: var(--text); text-align: left; }
+.exam-list .ok .mark { color: var(--ok); }
+.exam-list .ng .mark { color: var(--ng); }
+.review-list { list-style: none; padding: 0; margin: 0; }
+.review-list li { display: flex; gap: 12px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.review-list li .danger { margin-left: auto; }

@@ -1,5 +1,5 @@
 // ============================================================
-// 공용 도우미: HTML 이스케이프, 후리가나 표기 → <ruby>, 시간 표시, 섞기
+// 공용 도우미: HTML 이스케이프, 후리가나 표기 → <ruby>, 시간 표시, 섞기, 현재 시각(테스트용 시계)
 // ============================================================
 const Util = (() => {
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
@@ -25,5 +25,10 @@ const Util = (() => {
 
   const SPEAKER_LABEL = { M: '男', F: '女', M2: '男2', F2: '女2', N: 'ナレーション' };
 
-  return { esc, furigana, fmtTime, shuffle, SPEAKER_LABEL };
+  // 현재 시각 (ms). 테스트(smoke)가 clockOffset으로 날짜를 앞당겨 SRS 복습 예정을 확인한다.
+  let clockOffset = 0;
+  const now = () => Date.now() + clockOffset;
+  const setClockOffset = (ms) => { clockOffset = ms; };
+
+  return { esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset };
 })();

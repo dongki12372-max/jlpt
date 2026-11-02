@@ -74,6 +74,7 @@ const Player = (() => {
       audio.pause();
       audio.removeAttribute('src');
       audio.load();
+      Clip.stop();
     },
     get currentTime() { return audio.currentTime; },
     get duration() { return Number.isFinite(audio.duration) ? audio.duration : 0; },
@@ -83,5 +84,29 @@ const Player = (() => {
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     onError(fn) { errorListeners.add(fn); return () => errorListeners.delete(fn); },
     onEnded(fn) { endedListeners.add(fn); return () => endedListeners.delete(fn); },
+  };
+})();
+
+// ============================================================
+// 짧은 음성 (단어·예문). 문항 음성(Player)과 따로 재생해서 해설 화면의 대사 다시 듣기를 방해하지 않는다.
+//   화면이 바뀌면 Player.stop()이 같이 멈춘다.
+// ============================================================
+const Clip = (() => {
+  const audio = new Audio();
+  return {
+    play(src) {
+      Player.pause();
+      audio.src = src;
+      return audio.play().catch(() => {});
+    },
+    stop() {
+      audio.pause();
+      audio.removeAttribute('src');
+    },
+    get src() { return audio.getAttribute('src') || ''; },
+    get paused() { return audio.paused; },
+    get currentTime() { return audio.currentTime; },
+    get duration() { return Number.isFinite(audio.duration) ? audio.duration : 0; },
+    get error() { return audio.error; },
   };
 })();

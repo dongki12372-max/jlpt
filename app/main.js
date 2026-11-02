@@ -71,6 +71,17 @@ const SECTION_LOADERS = {
     const manifest = readJson(path.join(AUDIO_DIR, 'listening', 'manifest.json'), {});
     return { questions, manifest };
   },
+  // 문자·어휘: 단어(레벨별) + 문제(레벨별) + 음성 manifest
+  vocab: () => {
+    const words = {};
+    const questions = {};
+    for (const key of LEVEL_KEYS) {
+      words[key] = readJson(path.join(DATA_DIR, 'vocab', 'words', `${key}.json`), []);
+      questions[key] = readJson(path.join(DATA_DIR, 'vocab', 'questions', `${key}.json`), []);
+    }
+    const manifest = readJson(path.join(AUDIO_DIR, 'vocab', 'manifest.json'), {});
+    return { words, questions, manifest };
+  },
 };
 
 function checkSection(section) {
