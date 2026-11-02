@@ -24,6 +24,8 @@
 
   "tts": { "retries": 3, "concurrency": 4 },
 
+  "vocab": { "leadIn": 0.1, "tail": 0.25, "concurrency": 8, "check": { "word": 2.3, "example": 2.3 }, "_comment": "문자·어휘 단어·예문·문항 음성의 앞뒤 여백(초)과 동시 생성 수 (build_vocab_audio.py), check = 읽기 의심 기준 MFCC-DTW 거리 (check_vocab_tts.py)" },
+
   "output": { "sampleRate": 24000, "bitrate": "64k", "loudnorm": "I=-16:TP=-1.5:LRA=11" },
 
   "compare": {

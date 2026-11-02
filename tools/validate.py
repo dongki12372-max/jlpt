@@ -72,6 +72,15 @@ def check_tts_reading(text, tts, spans):
     problems = []
     if tts == text:
         return [(False, "ttsText가 text와 같음 (불필요)")]
+    # 문장 전체를 후리가나 읽기대로 가나로 바꾼 ttsText는 그대로 통과 (부분 대응 비교는 같은 글자가 겹치면 어긋난다)
+    full, k = [], 0
+    for s, e, reading in sorted(spans):
+        full.append(text[k:s])
+        full.append(reading)
+        k = e
+    full.append(text[k:])
+    if spans and to_hiragana(tts) == to_hiragana("".join(full)):
+        return []
     ops = difflib.SequenceMatcher(None, text, tts, autojunk=False).get_opcodes()
     for tag, i1, i2, j1, j2 in ops:
         if tag == "equal":

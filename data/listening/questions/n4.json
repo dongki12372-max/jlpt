@@ -296,7 +296,7 @@
     "vocab": [
       { "word": "手伝う", "reading": "てつだう", "meaning_ko": "돕다", "kind": "word" },
       { "word": "運ぶ", "reading": "はこぶ", "meaning_ko": "옮기다, 나르다", "kind": "word" },
-      { "word": "本棚", "reading": "ほんだな", "meaning_ko": "책장", "kind": "word" },
+      { "word": "本だな", "reading": "ほんだな", "meaning_ko": "책장", "kind": "word" },
       { "word": "〜にくい", "reading": "〜にくい", "meaning_ko": "~하기 어렵다", "kind": "grammar" }
     ],
     "tags": ["이사", "집"]
@@ -1003,7 +1003,7 @@
     "explanation_ko": "「来られますか」는 다음 주 파티에 올 수 있는지 묻는 가능형 질문이다. 조금 늦지만 갈 수 있을 것 같다는 3이 알맞다. 1은 아직 열리지 않은 파티를 과거형으로 말해 시제가 맞지 않고, 2는 「来る」를 써서 상대에게 와도 된다고 허락하는 말이라 입장이 뒤바뀌었다. 따라서 정답은 3이다.",
     "vocab": [
       { "word": "来週", "reading": "らいしゅう", "meaning_ko": "다음 주", "kind": "word" },
-      { "word": "来られる", "reading": "こられる", "meaning_ko": "올 수 있다(来る의 가능형)", "kind": "word" },
+      { "word": "来る", "reading": "くる", "meaning_ko": "오다 (来られる: 올 수 있다, 가능형)", "kind": "word" },
       { "word": "遅い", "reading": "おそい", "meaning_ko": "늦다", "kind": "word" }
     ],
     "tags": ["친구", "약속"]
@@ -1667,7 +1667,7 @@
       { "word": "誘う", "reading": "さそう", "meaning_ko": "권하다, 꼬시다", "kind": "word" },
       { "word": "試合", "reading": "しあい", "meaning_ko": "시합", "kind": "word" },
       { "word": "妻", "reading": "つま", "meaning_ko": "(나의) 아내", "kind": "word" },
-      { "word": "一緒", "reading": "いっしょ", "meaning_ko": "함께, 같이", "kind": "word" }
+      { "word": "いっしょに", "reading": "いっしょに", "meaning_ko": "함께, 같이", "kind": "word" }
     ],
     "tags": ["운동", "회사"]
   }
