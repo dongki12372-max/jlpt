@@ -30,6 +30,7 @@ const App = (() => {
   function setScreen(html, { onKey = null, onLeave = null } = {}) {
     if (cleanup) cleanup();
     Player.stop();
+    if (typeof Dict !== 'undefined') Dict.close();
     root().innerHTML = html;
     keyHandler = onKey;
     cleanup = onLeave;

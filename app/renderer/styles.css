@@ -361,3 +361,27 @@ ul.plain li { padding: 3px 0; }
 .review-list { list-style: none; padding: 0; margin: 0; }
 .review-list li { display: flex; gap: 12px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); }
 .review-list li .danger { margin-left: auto; }
+
+/* ============== 스크립트 해석·단어 사전 ============== */
+.script .ko { display: block; color: var(--text-dim); font-size: 13px; line-height: 1.5; margin: 2px 0 4px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
+.no-ko .script .ko { display: none; }
+.opt .opt-ko { display: block; color: var(--text-dim); font-size: 13px; margin-top: 2px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
+.explain-head .switches { display: inline-flex; gap: 14px; }
+.gl { cursor: pointer; border-bottom: 1px dotted rgba(154, 161, 171, 0.55); border-radius: 2px; }
+.gl:hover { background: rgba(91, 157, 255, 0.16); }
+.gl.active { background: rgba(91, 157, 255, 0.28); border-bottom-color: var(--accent); }
+.dict-pop {
+  position: absolute; z-index: 50; max-width: 320px; min-width: 180px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.dict-head { display: flex; align-items: baseline; gap: 10px; }
+.dict-word { font-size: 22px; font-weight: 600; }
+.dict-word rt { font-size: 11px; }
+.dict-reading { color: var(--text-dim); }
+.dict-head .btn-mini { margin-left: auto; }
+.dict-meaning { margin: 6px 0 2px; font-size: 15px; }
+.dict-pop p { margin: 4px 0 0; }
+.dict-deck { display: flex; gap: 10px; align-items: baseline; }
+.script .u.speaking { color: var(--ok); }
+.script .u.speaking rt { color: var(--ok); }

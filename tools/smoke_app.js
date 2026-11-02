@@ -242,12 +242,70 @@ async function run(win) {
   win.show();
   check('창을 숨겨도 구간 끝에서 멈춤', ph.paused && Math.abs(ph.t - seg[1]) < 0.3, `${ph.t.toFixed(2)} (끝 ${seg[1]}, ${ph.paused ? '멈춤' : '재생 중'})`);
 
+  await annotationTests({ js, click, exists, text, shot });
   await examTests(win, { js, click, exists, text, key, shot, player });
   await storageTests(win, { js, click, exists, text, key, shot, player });
 }
 
 // ---------- 실전 모의 ----------
 // 음성은 끝 근처로 건너뛰고, 답 고르는 시간·간격은 테스트 동안만 줄여서 처음부터 끝까지 진행한다.
+// 해설 스크립트: 줄별 한국어 해석, 단어를 누르면 사전 창 (단어장 단어면 ▶·단어장에서 보기)
+async function annotationTests({ js, click, exists, text, shot }) {
+  const all = await js('["N5","N4","N3"].flatMap(l => Listening.questions(l)).map(q => ({ id: q.id, ko: !!q.scriptKo, gl: !!q.gloss, ok: !!q.optionsKo, lines: q.script.split("\\n").length }))');
+  check('전 문항에 해석·단어 사전·선택지 해석', all.every((q) => q.ko && q.gl && q.ok), `${all.filter((q) => q.ko && q.gl && q.ok).length}/${all.length}`);
+  const id = 'n4-point-002';
+  await js(`(() => { const q = Listening.questions('N4').find(x => x.id === '${id}'); QuestionView.show(q, { crumb: '', pos: '', backLabel: '←', onBack: () => App.showHome(), answered: 1, autoplay: false }); return true; })()`);
+  await sleep(300);
+  const nLines = await js('document.querySelectorAll(".script .line").length');
+  check('해설: 줄마다 한국어 해석', (await js('document.querySelectorAll(".script .line .ko").length')) === nLines && nLines > 0, `${nLines}줄`);
+  check('해설: 선택지 해석', (await js('document.querySelectorAll(".opt .opt-ko").length')) === 4);
+  const nGl = await js('document.querySelectorAll(".script .gl").length');
+  const want = await js(`Listening.questions('N4').find(x => x.id === '${id}').gloss.flat().length`);
+  check('해설: 단어가 누를 수 있게 표시', nGl > 0 && nGl >= want - 2, `${nGl} / gloss ${want}`);
+  await js('document.body.classList.contains("no-ko") && document.querySelector("[data-el=ko]").click(); true');
+  await js('(() => { const cb = document.querySelector("[data-el=ko]"); cb.checked = false; cb.dispatchEvent(new Event("change")); return true; })()');
+  check('해석 끄기', await js('getComputedStyle(document.querySelector(".script .ko")).display === "none"'));
+  await js('(() => { const cb = document.querySelector("[data-el=ko]"); cb.checked = true; cb.dispatchEvent(new Event("change")); return true; })()');
+  // 단어장에 있는 단어를 눌러 사전 창
+  const deckIdx = await js(`(() => { const els = Array.from(document.querySelectorAll('.script .gl')); const q = Listening.questions('N4').find(x => x.id === '${id}');
+    return els.findIndex(el => { const [a, b] = el.dataset.g.split('.').map(Number); const g = q.gloss[a][b]; return Vocab.word(g.w + '|' + g.r); }); })()`);
+  await js(`document.querySelectorAll('.script .gl')[${Math.max(0, deckIdx)}].click(); true`);
+  await sleep(300);
+  const pop = await js('(() => { const p = document.querySelector(".dict-pop"); return p ? { word: p.querySelector(".dict-word").textContent, meaning: p.querySelector(".dict-meaning").textContent, deck: !!p.querySelector("[data-dict=deck]") } : null; })()');
+  check('단어 누르면 사전 창 (표기·뜻)', !!pop && pop.meaning.length > 0, JSON.stringify(pop));
+  check('단어장 단어: 「단어장에 있음」·▶ 발음', deckIdx >= 0 && pop && pop.deck && (await js('Clip.src')).includes('/audio/vocab/words/'));
+  check('단어를 눌러도 대사 다시 듣기는 안 됨', await js('Player.paused'));
+  await shot('11-dict-popup');
+  // 재생 중 지금 읽는 단어 초록색 (manifest words): 둘째 줄 구간을 재생하며 확인
+  await js('document.body.click(); true');
+  const hasWords = await js(`!!(Listening.audioInfo(Listening.questions('N4').find(x => x.id === '${id}')).words || []).length`);
+  check('manifest에 단어별 시각', hasWords);
+  await js(`(() => { const info = Listening.audioInfo(Listening.questions('N4').find(x => x.id === '${id}')); Player.playSegment(info.lines[1][0], info.lines[1][1]); return true; })()`);
+  let spoken = [];
+  for (let k = 0; k < 15 && spoken.length < 2; k++) {
+    await sleep(200);
+    const now = await js('Array.from(document.querySelectorAll(".script .line .u.speaking")).map(e => e.textContent).join("")');
+    if (now && !spoken.includes(now)) spoken.push(now);
+  }
+  check('재생 중 지금 읽는 단어 표시 (바뀌어 감)', spoken.length >= 2, spoken.join(' → '));
+  await shot('12-speaking-word');
+  await js('Player.pause(); true');
+  await sleep(200);
+  check('멈추면 단어 표시 지움', !(await exists('.script .u.speaking')));
+  await js('document.body.click(); true');
+  await sleep(100);
+  check('창 밖을 누르면 사전 창 닫힘', !(await exists('.dict-pop')));
+  await js('document.querySelector(".script .gl").click(); true');
+  await click('[data-dict="deck"]');
+  await sleep(300);
+  if (await exists('.word-detail')) {
+    await click('[data-act="back"]');
+    await sleep(300);
+    check('단어장에서 보기 → 돌아오면 해설 그대로', await exists('.explain .script .gl'));
+  }
+  await js('App.showHome()');
+}
+
 async function examTests(win, { js, click, exists, text, key, shot, player }) {
   const orig = await js('({ a: Listening.prefs.answerSeconds, g: Listening.cfg.examGapSeconds })');
   await js('Listening.prefs.answerSeconds = 1; Listening.cfg.examGapSeconds = 0.2;');

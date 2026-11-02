@@ -154,6 +154,30 @@ def check_vocab(vocab, err, warn):
                     break
 
 
+def check_annotations(q, err, warn):
+    """해석(scriptKo·optionsKo)과 단어 사전(gloss): 줄 수, gloss 단어가 그 줄에 순서대로 나오는지."""
+    lines = q["script"].split("\n")
+    for k in ("scriptKo", "gloss"):
+        if k in q and len(q[k]) != len(lines):
+            err(f"{k} {len(q[k])}줄 ≠ 스크립트 {len(lines)}줄")
+    if "optionsKo" in q and len(q["optionsKo"]) != len(q["options"]):
+        err(f"optionsKo {len(q['optionsKo'])}개 ≠ 선택지 {len(q['options'])}개")
+    if "gloss" not in q:
+        return
+    for i, (sline, gl) in enumerate(zip(lines, q["gloss"]), 1):
+        body = strip_furigana(sline.split("：", 1)[1] if "：" in sline else sline)
+        pos = 0
+        for g in gl:
+            at = body.find(g["t"], pos)
+            if at < 0:
+                where = "앞쪽에만 있음 (순서)" if g["t"] in body else "줄에 없음"
+                err(f"gloss {i}번째 줄 「{g['t']}」: {where}")
+                continue
+            pos = at + len(g["t"])
+        if not gl and len(body) > 6:
+            warn(f"gloss {i}번째 줄이 비어 있음")
+
+
 def expected_script_lines(q):
     """스크립트가 따라야 할 '화자：본문' 줄 목록."""
     if q["type"] == "hatsuwa":
@@ -207,6 +231,9 @@ def check_question(q, level_key, cfg, errors, warnings):
         err("lines가 비어 있음")
     if qtype in ("kadai", "point") and q["question"] and not q["situation"].endswith(q["question"]):
         warn("situation 끝에 question이 붙어 있지 않음 (첫 질문 읽기 누락 가능)")
+    for spk in q.get("phone", []):
+        if spk not in {l["speaker"] for l in q["lines"]}:
+            err(f"phone 화자 {spk}의 대사가 없음")
     if q.get("optionSpeaker") not in (None, "N") and not tcfg["spokenOptions"]:
         warn("선택지를 읽지 않는 유형인데 optionSpeaker가 있음")
 
@@ -268,6 +295,8 @@ def check_question(q, level_key, cfg, errors, warnings):
         if "ttsText" in opt:
             for is_err, msg in check_tts_reading(opt["text"], opt["ttsText"], spans):
                 (err if is_err else warn)(f"{label}: {msg}")
+
+    check_annotations(q, err, warn)
 
     # 해설 길이 (2~4문장 권장)
     n_sent = len([s for s in re.split(r"(?<=[.!?。])\s*", q["explanation_ko"]) if s.strip()])

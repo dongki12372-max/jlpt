@@ -32,7 +32,7 @@
     "question": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions", "answer", "script", "explanation_ko", "vocab", "tags"],
+      "required": ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions", "answer", "script", "scriptKo", "gloss", "optionsKo", "explanation_ko", "vocab", "tags"],
       "properties": {
         "id": { "type": "string", "pattern": "^n[345]-(kadai|point|gaiyou|hatsuwa|sokuji)-[0-9]{3}$" },
         "level": { "enum": ["N5", "N4", "N3"] },
@@ -57,6 +57,21 @@
           }
         },
         "script": { "$ref": "#/$defs/nonEmpty", "description": "줄마다 '화자：대사', 후리가나는 {漢字|かんじ}. 발화표현은 'N：상황+질문' 한 줄" },
+        "phone": { "type": "array", "items": { "enum": ["M", "F", "M2", "F2"] }, "minItems": 1, "uniqueItems": true,
+          "description": "전화·음성 메시지에서 전화 너머 화자 — 이 화자의 대사는 전화 음질(대역 필터)로 만든다" },
+        "scriptKo": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" }, "description": "스크립트 줄마다 한국어 해석 (줄 수 = script 줄 수)" },
+        "gloss": {
+          "type": "array", "description": "스크립트 줄마다 단어 사전 항목 (해설 화면에서 누르면 뜸). t는 그 줄에 나오는 그대로(활용형), 줄 안에서 앞에서부터 순서대로",
+          "items": { "type": "array", "items": {
+            "type": "object", "additionalProperties": false, "required": ["t", "w", "r", "m"],
+            "properties": {
+              "t": { "$ref": "#/$defs/nonEmpty", "description": "줄에 나온 모양 (후리가나를 뺀 글자)" },
+              "w": { "$ref": "#/$defs/nonEmpty", "description": "사전형 (문법 패턴은 〜로 시작)" },
+              "r": { "type": "string", "pattern": "^[〜ぁ-ゖァ-ヺー]+$", "description": "사전형의 읽기" },
+              "m": { "$ref": "#/$defs/nonEmpty", "description": "한국어 뜻 (이 문맥의 뜻 먼저)" }
+            } } }
+        },
+        "optionsKo": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" }, "description": "선택지마다 한국어 해석 (답한 뒤 표시)" },
         "explanation_ko": { "$ref": "#/$defs/nonEmpty" },
         "vocab": {
           "type": "array",

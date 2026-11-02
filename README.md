@@ -5,6 +5,8 @@ JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라
 ### 청해
 
 - **유형별 연습**: 과제이해·포인트이해·개요이해(N3)·발화표현·즉시응답. 재생 속도 0.8~1.2배, 다시 듣기, 대사 한 줄씩 다시 듣기, 후리가나 스크립트·한국어 해설·핵심 단어.
+- **스크립트 공부**: 대사마다 한국어 해석(켜고 끄기), 단어를 누르면 사전 창(사전형·읽기·뜻, 단어장 단어면 ▶ 발음·단어장에서 보기), 재생하면 지금 읽는 단어가 초록색으로 표시, 답한 뒤 선택지 해석.
+- **전화 대화**: 전화·음성 메시지 문항은 전화 너머 화자의 목소리를 전화 음질로 들려줍니다.
 - **실전 모의**: 실제 순서대로 지시문 → 문항 음성 → 답 고르는 시간이 자동으로 이어지고, 한 번만 들을 수 있습니다. 결과는 60점 만점 환산 점수(참고값)와 유형별 정답률로 보여 줍니다.
 - **오답노트**: 틀린 문항을 모아 다시 풀고, 연속 2번 맞히면 자동으로 빠집니다.
 - **문제 은행**: N5 48문항, N4 56문항, N3 56문항 (레벨별 실전 모의 2회분). 모든 문항은 오리지널입니다.
@@ -47,6 +49,8 @@ npm run smoke                                 # 청해·문자어휘 스모크 �
    - 선택지에 한자가 있으면 `furigana` 필수.
    - `vocab`의 `kind`: `word`(사전형) / `expression`(인사말·관용 표현) / `grammar`(〜로 시작).
    - TTS가 잘못 읽을 만한 곳만 `ttsText`(읽기는 후리가나와 같아야 함).
+   - `scriptKo`(줄마다 해석), `gloss`(줄마다 단어: 문장 속 모양 t·사전형 w·읽기 r·뜻 m, 줄 안 순서대로), `optionsKo`(선택지 해석) 필수. 따로 쓴 해석은 `tools/merge_annotations.py <파일>`로 넣을 수 있습니다.
+   - 전화 대화면 `phone`: 전화 너머 화자 목록 (예: `["F"]`).
    - 그림 선택지는 `data/listening/images/{id}-opt{1..4}.svg` (흑백 선화, `viewBox="0 0 240 180"`, `stroke="currentColor"`, 글자는 숫자만).
 2. 검사합니다: `.venv/bin/python tools/validate.py` — 실패하면 음성 생성으로 넘어가지 않습니다.
    - 따로 쓴 배치 파일은 `validate.py --batch <파일>`로 검사한 뒤 `tools/merge_batch.py <파일>`로 붙일 수 있습니다 (기존 서식 유지).
@@ -75,7 +79,7 @@ npm run smoke                                 # 청해·문자어휘 스모크 �
 .venv/bin/python tools/build_audio.py --force          # 전부 다시
 ```
 
-- 결과: `audio/listening/{레벨}/{id}.mp3`, 유형별 지시문 `_intro_{유형}.mp3`, 구간 시각 `audio/listening/manifest.json`.
+- 결과: `audio/listening/{레벨}/{id}.mp3`, 유형별 지시문 `_intro_{유형}.mp3`, 구간 시각과 단어별 시각(edge-tts WordBoundary) `audio/listening/manifest.json`.
 - 화자 음성(N·M·F·M2·F2)과 쉼 길이는 `tools/voices.json`. 값을 바꾸면 그 화자를 쓰는 문항만 다시 생성됩니다. 화자 후보 비교 샘플은 `tools/voice_compare.py`.
 - 지시문 문구는 `data/listening/intros.json`.
 

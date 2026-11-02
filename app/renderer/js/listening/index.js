@@ -20,6 +20,9 @@ const Listening = (() => {
     set answerSeconds(v) { Storage.setSetting(SECTION, 'answerSeconds', v); },
     get order() { return Storage.getSetting(SECTION, 'order', 'seq'); },
     set order(v) { Storage.setSetting(SECTION, 'order', v); },
+    // 해설 스크립트의 줄별 한국어 해석 표시
+    get showKo() { return Storage.getSetting(SECTION, 'showKo', true); },
+    set showKo(v) { Storage.setSetting(SECTION, 'showKo', !!v); },
     get unsolvedFirst() { return Storage.getSetting(SECTION, 'unsolvedFirst', false); },
     set unsolvedFirst(v) { Storage.setSetting(SECTION, 'unsolvedFirst', !!v); },
   };

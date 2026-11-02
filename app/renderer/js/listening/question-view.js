@@ -1,6 +1,6 @@
 // ============================================================
 // 청해 · 문항 화면 (연습 풀이와 실전 모의 결과의 해설 보기가 같이 쓴다)
-//   재생 컨트롤·속도, 선택지, 즉시 채점, 해설 패널(후리가나·대사 구간 다시 듣기·단어)
+//   재생 컨트롤·속도, 선택지, 즉시 채점, 해설 패널(후리가나·줄별 해석·대사 구간 다시 듣기·단어 사전·단어)
 //   단축키: 1~4 답 선택, Space 재생/일시정지, R 다시 듣기, Enter 다음, Esc 뒤로
 //
 //   QuestionView.show(q, {
@@ -19,6 +19,7 @@ const QuestionView = (() => {
 
   function applyFurigana() {
     document.body.classList.toggle('no-furigana', !prefs().furigana);
+    document.body.classList.toggle('no-ko', !prefs().showKo);
   }
 
   // SVG를 인라인으로 넣어 currentColor가 테마 글자색을 따르게 한다
@@ -126,8 +127,9 @@ const QuestionView = (() => {
         const cls = answered === null ? '' :
           n === q.answer ? 'correct' : n === answered ? 'wrong' : 'dim';
         const showText = !q.spokenOptions || answered !== null;
+        const ko = answered !== null && q.optionsKo ? `<span class="opt-ko" lang="ko">${Util.esc(q.optionsKo[i])}</span>` : '';
         const text = showText && !imgOptions
-          ? `<span class="opt-text" lang="ja">${Util.furigana(o.furigana || o.text)}</span>` : '';
+          ? `<span class="opt-text" lang="ja">${Util.furigana(o.furigana || o.text)}${ko}</span>` : '';
         const img = imgOptions ? `<div class="svg-box" data-img="${Util.esc(o.image)}"></div>` : '';
         // 답한 뒤 음성 선택지는 그 부분만 다시 들을 수 있다
         const seg = answered !== null && q.spokenOptions && info && info.options[i];
@@ -163,9 +165,11 @@ const QuestionView = (() => {
       const lines = q.script.split('\n').map((row, i) => {
         const cut = row.indexOf('：');
         const spk = row.slice(0, cut), txt = row.slice(cut + 1);
+        const gloss = q.gloss ? q.gloss[i] : null;
+        const ko = q.scriptKo ? `<span class="ko" lang="ko">${Util.esc(q.scriptKo[i])}</span>` : '';
         return `<li class="line ${canReplay ? 'clickable' : ''}" data-line="${i}">
                   <span class="spk">${Util.esc(Util.SPEAKER_LABEL[spk] || spk)}</span>
-                  <span class="txt">${Util.furigana(txt)}</span>
+                  <span class="txt">${Dict.glossHtml(txt, gloss || [], `${i}`)}${ko}</span>
                 </li>`;
       }).join('');
       // 단어장에 있는 단어(문자·어휘 영역)는 표시하고 ▶ 단어 음성
@@ -186,7 +190,10 @@ const QuestionView = (() => {
         <section class="explain card">
           <div class="explain-head">
             <h3>스크립트</h3>
-            <label class="switch"><input type="checkbox" data-el="furi" ${prefs().furigana ? 'checked' : ''}> 후리가나</label>
+            <span class="switches">
+              ${q.scriptKo ? `<label class="switch"><input type="checkbox" data-el="ko" ${prefs().showKo ? 'checked' : ''}> 해석</label>` : ''}
+              <label class="switch"><input type="checkbox" data-el="furi" ${prefs().furigana ? 'checked' : ''}> 후리가나</label>
+            </span>
           </div>
           <ol class="script" lang="ja">${lines}</ol>
           ${canReplay ? '<p class="hint dim">대사를 누르면 그 부분만 다시 들을 수 있습니다.</p>' : ''}
@@ -198,21 +205,44 @@ const QuestionView = (() => {
       if (opts.onNext) $('[data-act="next"]').addEventListener('click', opts.onNext);
       $$('[data-word-audio]').forEach((b) => b.addEventListener('click', () => Clip.play(Vocab.wordAudio(Vocab.word(b.dataset.wordAudio)))));
       $('[data-el="furi"]').addEventListener('change', (e) => { prefs().furigana = e.target.checked; applyFurigana(); });
+      const koBox = $('[data-el="ko"]');
+      if (koBox) koBox.addEventListener('change', (e) => { prefs().showKo = e.target.checked; applyFurigana(); });
+      // 단어를 누르면 사전 창 (대사 다시 듣기와 겹치지 않게 단어 클릭은 여기서 끝낸다)
+      Dict.bind($('.explain .script'), (key) => q.gloss[Number(key.split('.')[0])][Number(key.split('.')[1])],
+        () => show(q, { ...opts, answered, autoplay: false }));
       lineEls = $$('.script .line');
       if (canReplay) {
-        lineEls.forEach((li) => li.addEventListener('click', () => {
+        lineEls.forEach((li) => li.addEventListener('click', (e) => {
+          if (e.target.closest('.gl')) return;
           const seg = info.lines[Number(li.dataset.line)];
           if (seg) Player.playSegment(seg[0], seg[1]);
         }));
       }
     }
 
-    // 재생 위치에 해당하는 대사 강조
+    // 재생 위치에 해당하는 대사 강조 + 그 줄에서 지금 읽는 단어를 초록색으로 (manifest의 단어별 시각)
+    let speakingKey = '';
     function highlightLine(t) {
-      if (!lineEls.length || !info || q.type === 'hatsuwa') return;
+      if (!lineEls.length || !info) return;
+      const playing = !Player.paused;
+      let key = '';
       lineEls.forEach((li, i) => {
-        const seg = info.lines[i];
-        li.classList.toggle('playing', !!seg && !Player.paused && t >= seg[0] && t < seg[1]);
+        const seg = q.type === 'hatsuwa' ? null : info.lines[i];
+        li.classList.toggle('playing', !!seg && playing && t >= seg[0] && t < seg[1]);
+        const words = info.words && info.words[i];
+        if (playing && words) {
+          const w = words.find((x) => t >= x[0] && t < x[1]);
+          if (w) key = `${i}:${w[2]}:${w[3]}`;
+        }
+      });
+      if (key === speakingKey) return;
+      speakingKey = key;
+      document.querySelectorAll('.script .u.speaking').forEach((el) => el.classList.remove('speaking'));
+      if (!key) return;
+      const [i, cs, ce] = key.split(':').map(Number);
+      lineEls[i].querySelectorAll('.u').forEach((el) => {
+        const p = Number(el.dataset.p);
+        if (p >= cs && p < ce) el.classList.add('speaking');
       });
     }
 

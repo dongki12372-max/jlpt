@@ -13,7 +13,7 @@ from pathlib import Path
 from validate import QUESTIONS_DIR, ROOT
 
 FIELD_ORDER = ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions",
-               "optionSpeaker", "answer", "scene", "script", "explanation_ko", "vocab", "tags"]
+               "optionSpeaker", "phone", "answer", "scene", "script", "scriptKo", "gloss", "optionsKo", "explanation_ko", "vocab", "tags"]
 INLINE_LISTS = {"lines", "options", "vocab"}
 
 
@@ -42,6 +42,15 @@ def fmt_question(q):
                 out.append(f'    {j(k)}: [\n{rows}\n    ]')
         elif k == "scene":
             out.append(f'    {j(k)}: {inline_obj(v)}')
+        elif k in ("scriptKo", "optionsKo"):
+            rows = ",\n".join(f"      {j(x)}" for x in v)
+            out.append(f'    {j(k)}: [\n{rows}\n    ]')
+        elif k == "gloss":
+            # 줄마다 한 줄: [{t,w,r,m}, …]
+            rows = ",\n".join("      [" + ", ".join(inline_obj(g) for g in line) + "]" for line in v)
+            out.append(f'    {j(k)}: [\n{rows}\n    ]')
+        elif k == "phone":
+            out.append(f'    {j(k)}: [' + ", ".join(j(t) for t in v) + ']')
         elif k == "tags":
             out.append(f'    {j(k)}: [' + ", ".join(j(t) for t in v) + ']')
         else:

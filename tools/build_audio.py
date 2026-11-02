@@ -7,11 +7,14 @@
   .venv/bin/python tools/build_audio.py --force          # 전부 다시 생성
 
 순서: validate.py 통과 → 구간별 edge-tts → 쉼과 함께 합치기 → loudnorm → audio/listening/{level}/{id}.mp3
-audio/listening/manifest.json에 내용 해시와 구간 시각(대사별·질문·선택지 읽는 시간·음성 선택지)을 기록한다.
+audio/listening/manifest.json에 내용 해시와 구간 시각(대사별·질문·선택지 읽는 시간·음성 선택지)과
+스크립트 줄마다 단어별 시각(edge-tts WordBoundary)을 기록한다.
+전화·음성 메시지 문항은 `phone` 화자의 대사를 전화 음질(voices.json phone 대역 필터)로 만든다.
 답 고르는 시간은 음성에 넣지 않는다 (앱 타이머).
 """
 import argparse
 import asyncio
+import difflib
 import hashlib
 import json
 import subprocess
@@ -27,7 +30,7 @@ from validate import AUDIO_DIR, DATA_DIR, QUESTIONS_DIR, ROOT, load_listening_co
 MANIFEST_PATH = AUDIO_DIR / "manifest.json"
 VOICES_PATH = ROOT / "tools" / "voices.json"
 INTROS_PATH = DATA_DIR / "intros.json"
-BUILD_VERSION = 1  # 합치는 방식이 바뀌면 올려서 전부 다시 만든다
+BUILD_VERSION = 2  # 합치는 방식이 바뀌면 올려서 전부 다시 만든다 (2: 단어별 시각 기록)
 
 
 def load_json(path):
@@ -81,7 +84,7 @@ def plan_intro(text, vc):
     return [("pause", None, p["leadIn"]), ("say", None, "N", text), ("pause", None, p["tail"])]
 
 
-def steps_hash(steps, vc):
+def steps_hash(steps, vc, phone=()):
     speakers = sorted({s[2] for s in steps if s[0] == "say"})
     payload = {
         "v": BUILD_VERSION,
@@ -89,19 +92,30 @@ def steps_hash(steps, vc):
         "voices": {k: vc["voices"][k] for k in speakers},
         "output": vc["output"],
     }
+    if phone:   # 전화 음질 화자가 있을 때만 해시에 넣는다 (다른 문항은 해시가 그대로)
+        payload["phone"] = {"speakers": sorted(phone), "filter": vc["phone"]}
     return hashlib.sha1(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
 # ---------- 합성·합치기 ----------
 
 async def synth(text, spec, out, retries):
+    """mp3를 out에 쓰고 단어 경계 [(시작초, 끝초, 글자)]를 돌려준다 (edge-tts WordBoundary)."""
     last = None
     for attempt in range(1, retries + 1):
         try:
-            comm = edge_tts.Communicate(text, spec["voice"], rate=spec.get("rate", "+0%"), pitch=spec.get("pitch", "+0Hz"))
-            await comm.save(str(out))
+            comm = edge_tts.Communicate(text, spec["voice"], rate=spec.get("rate", "+0%"), pitch=spec.get("pitch", "+0Hz"),
+                                        boundary="WordBoundary")
+            words = []
+            with open(out, "wb") as f:
+                async for chunk in comm.stream():
+                    if chunk["type"] == "audio":
+                        f.write(chunk["data"])
+                    elif chunk["type"] == "WordBoundary":
+                        s = chunk["offset"] / 1e7
+                        words.append((s, s + chunk["duration"] / 1e7, chunk["text"]))
             if out.stat().st_size > 0:
-                return
+                return words
             last = RuntimeError("빈 파일")
         except Exception as e:  # 네트워크·서비스 오류 → 재시도
             last = e
@@ -117,15 +131,25 @@ def ffprobe_duration(path):
     return float(out.stdout.strip())
 
 
-async def render(steps, out_path, voices, vc, sem):
+def phone_filter(seg, spec):
+    """전화 음질: 대역 필터(저역·고역을 여러 번 걸어 가파르게) 뒤 원래 음량으로 맞춤."""
+    out = seg
+    for _ in range(spec["passes"]):
+        out = out.high_pass_filter(spec["low"]).low_pass_filter(spec["high"])
+    return out.apply_gain(seg.dBFS - out.dBFS)
+
+
+async def render(steps, out_path, voices, vc, sem, phone=()):
     """steps를 합쳐 out_path(mp3)로 저장하고 {mark: (start, end)}와 길이를 돌려준다."""
     sr = vc["output"]["sampleRate"]
     with tempfile.TemporaryDirectory(prefix="jlpt-audio-") as tmp:
         tmp = Path(tmp)
 
+        bounds = {}
+
         async def one(i, step):
             async with sem:
-                await synth(step[3], voices[step[2]], tmp / f"{i:03d}.mp3", vc["tts"]["retries"])
+                bounds[i] = await synth(step[3], voices[step[2]], tmp / f"{i:03d}.mp3", vc["tts"]["retries"])
 
         await asyncio.gather(*(one(i, s) for i, s in enumerate(steps) if s[0] == "say"))
 
@@ -136,10 +160,15 @@ async def render(steps, out_path, voices, vc, sem):
                 seg = AudioSegment.silent(duration=round(step[2] * 1000), frame_rate=sr)
             else:
                 seg = AudioSegment.from_mp3(tmp / f"{i:03d}.mp3").set_frame_rate(sr).set_channels(1)
+                if step[2] in phone and step[1] and step[1][0] == "line":
+                    seg = phone_filter(seg, vc["phone"])
             start = len(audio)
             audio += seg
             if step[1]:
                 marks[tuple(step[1])] = (start / 1000, len(audio) / 1000)
+                if step[0] == "say":
+                    # 단어 경계: 구간 시작 + 구간 안 시각, 글자는 그 구간에서 읽힌 문자열
+                    marks[("words",) + tuple(step[1])] = [(start / 1000 + a, start / 1000 + b, w) for a, b, w in bounds.get(i, [])]
 
         wav = tmp / "joined.wav"
         audio.export(wav, format="wav")
@@ -160,6 +189,31 @@ async def render(steps, out_path, voices, vc, sem):
     return marks, duration
 
 
+def map_words(display, spoken, words):
+    """읽힌 문자열(spoken)의 단어 경계 → 화면 문자열(display)의 글자 위치 [[시작초, 끝초, 시작글자, 끝글자]].
+    ttsText로 읽기를 바꾼 줄은 두 문자열을 맞춰(difflib) 위치를 옮긴다."""
+    ops = difflib.SequenceMatcher(None, display, spoken, autojunk=False).get_opcodes()
+
+    def to_display(j, end):
+        for tag, i1, i2, j1, j2 in ops:
+            if j1 <= j < j2 or (end and j1 < j <= j2):
+                if tag == "equal":
+                    return i1 + (j - j1)
+                return i2 if end else i1
+        return len(display) if end else 0
+
+    out, cur = [], 0
+    for a, b, w in words:
+        at = spoken.find(w, cur)
+        if at < 0:
+            continue
+        cur = at + len(w)
+        cs, ce = to_display(at, False), to_display(cur, True)
+        if ce > cs:
+            out.append([round(a, 3), round(b, 3), cs, ce])
+    return out
+
+
 def manifest_entry(q, marks, duration, digest):
     r = lambda pair: [round(pair[0], 3), round(pair[1], 3)] if pair else None
     n_opt = len(q["options"]) if q["spokenOptions"] else 0
@@ -171,7 +225,17 @@ def manifest_entry(q, marks, duration, digest):
         "reading": r(marks.get(("reading",))),
         # 음성 선택지: 번호 읽기 시작 ~ 선택지 끝
         "options": [r((marks[("optnum", i)][0], marks[("option", i)][1])) for i in range(n_opt)],
+        # 스크립트 줄마다 단어별 시각 (재생 중 지금 읽는 단어 표시): [[시작초, 끝초, 시작글자, 끝글자], …]
+        "words": script_words(q, marks),
     }
+
+
+def script_words(q, marks):
+    if q["type"] == "hatsuwa":   # 스크립트 한 줄 = 상황 + 질문 (situation 구간에서 한 번에 읽음)
+        text = q["situation"] + q["question"]
+        return [map_words(text, text, marks.get(("words", "situation"), []))]
+    return [map_words(line["text"], line.get("ttsText", line["text"]), marks.get(("words", "line", i), []))
+            for i, line in enumerate(q["lines"])]
 
 
 # ---------- 메인 ----------
@@ -213,7 +277,7 @@ def main():
             if args.id and q["id"] != args.id:
                 continue
             steps = plan_question(q, cfg, vc)
-            jobs.append((q["id"], AUDIO_DIR / lv / f"{q['id']}.mp3", steps, steps_hash(steps, vc), q))
+            jobs.append((q["id"], AUDIO_DIR / lv / f"{q['id']}.mp3", steps, steps_hash(steps, vc, q.get("phone", ())), q))
     if args.id and not any(j[4] for j in jobs):
         print(f"문항 없음: {args.id}")
         sys.exit(1)
@@ -228,7 +292,7 @@ def main():
         sem = asyncio.Semaphore(vc["tts"]["concurrency"])
         for i, (key, out, steps, digest, q) in enumerate(todo, 1):
             try:
-                marks, duration = await render(steps, out, vc["voices"], vc, sem)
+                marks, duration = await render(steps, out, vc["voices"], vc, sem, (q or {}).get("phone", ()))
             except Exception as e:
                 failed.append((key, str(e)))
                 print(f"[{i}/{len(todo)}] ✗ {key}: {e}")
