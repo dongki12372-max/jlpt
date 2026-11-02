@@ -1,11 +1,20 @@
 # JLPT 청해 연습
 
-JLPT 청해(聴解)만 연습하는 오프라인 macOS 앱입니다. N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 스크립트와 해설을 보여 줍니다. 앱을 쓰는 동안에는 인터넷에 접속하지 않습니다.
+JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라인 macOS 앱입니다. N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 해설을 보여 줍니다. 앱을 쓰는 동안에는 인터넷에 접속하지 않습니다. (앱 이름은 가칭이며 `app/config.js`의 `appName`에서 바꿉니다.)
+
+### 청해
 
 - **유형별 연습**: 과제이해·포인트이해·개요이해(N3)·발화표현·즉시응답. 재생 속도 0.8~1.2배, 다시 듣기, 대사 한 줄씩 다시 듣기, 후리가나 스크립트·한국어 해설·핵심 단어.
 - **실전 모의**: 실제 순서대로 지시문 → 문항 음성 → 답 고르는 시간이 자동으로 이어지고, 한 번만 들을 수 있습니다. 결과는 60점 만점 환산 점수(참고값)와 유형별 정답률로 보여 줍니다.
 - **오답노트**: 틀린 문항을 모아 다시 풀고, 연속 2번 맞히면 자동으로 빠집니다.
 - **문제 은행**: N5 48문항, N4 56문항, N3 56문항 (레벨별 실전 모의 2회분). 모든 문항은 오리지널입니다.
+
+### 문자·어휘
+- **단어장 (SRS)**: N5 752 · N4 660 · N3 1,783단어. 단어마다 읽기 카드·뜻 카드, 「다시/어려움/알맞음/쉬움」 평가로 다음 복습일이 정해집니다 (SM-2 단순화, 하루 새 카드 수는 설정). 모든 단어와 예문에 음성.
+- **유형별 연습**: 漢字読み·表記·文脈規定·言い換え類義·用法(N4·N3). 답하면 완성 문장(▶ 음성), 해설, 오답 선택지마다 왜 틀렸는지, 이 문항의 단어 카드.
+- **실전 모의**: 레벨별 구성·시간(N5 20분 · N4 25분 · N3 30분), 문항 자유 이동·답 바꾸기, 시간이 끝나면 자동 제출. 실전 중에는 후리가나가 꺼집니다.
+- **단어장 연동**: 문제에서 틀린 단어는 단어장의 오늘 복습으로 들어갑니다. 청해 해설의 단어 목록에도 「단어장에 있음」과 ▶ 단어 음성이 붙습니다.
+- **문제 은행**: 레벨별 실전 모의 3회분 (N5 63 · N4 84 · N3 105문항).
 
 ## 설치
 
@@ -24,6 +33,7 @@ npm install                                   # Electron, electron-builder
 python3 -m venv .venv
 .venv/bin/pip install -r tools/requirements.txt   # edge-tts, pydub, jsonschema
 npm start                                     # 개발 모드로 실행
+npm run smoke                                 # 청해·문자어휘 스모크 테스트 (smoke:listening, smoke:vocab)
 ```
 
 `audio/`는 git에 올리지 않습니다. 처음 받았을 때는 아래 「음성 다시 만들기」로 생성합니다.
@@ -44,6 +54,15 @@ npm start                                     # 개발 모드로 실행
 4. 앱에서 확인합니다: `npm run smoke` (앱을 띄워 전 레벨·유형을 자동으로 눌러 봄).
 
 실전 모의 문항 수·답 고르는 시간 같은 숫자는 `app/config.js`에서만 바꿉니다. 앱 이름도 `app/config.js`의 `appName` 한 곳에서 정합니다.
+
+## 문자·어휘 데이터
+
+- 단어: `data/vocab/words/{n5,n4,n3}.json` (한 줄에 한 단어, 형식은 `data/vocab/schema-words.json`). 기록은 `key`(단어|읽기) 기준이라 id나 순서가 바뀌어도 유지됩니다.
+- 문제: `data/vocab/questions/{n5,n4,n3}.json` (`data/vocab/schema-questions.json`). 후리가나 `{漢字|かな}`, 밑줄 `[[ ]]`, 빈칸 `（　）`.
+- 검사: `.venv/bin/python tools/validate_vocab.py` (후리가나가 답을 알려 주지 않는지, targets가 단어 데이터에 있고 레벨 이하인지, 선택지 형태, 정답 분포 등).
+- 배치로 추가: 단어는 `tools/merge_words.py <배치>`, 문제는 `tools/merge_questions.py <배치>` (검사를 통과해야 합쳐짐).
+- 청해 문항의 vocab(word·expression)은 `tools/import_listening_vocab.py`로 단어 데이터와 출처를 맞춥니다.
+- 음성: `.venv/bin/python tools/build_vocab_audio.py` (단어·예문·문항 완성 문장, 바뀐 것만). 읽기가 틀릴 만한 곳은 `tools/check_vocab_tts.py --fix-words --fix-examples`가 찾아 `ttsText`를 넣습니다 (MFCC+DTW 비교, librosa 필요).
 
 ## 음성 다시 만들기
 
@@ -74,9 +93,13 @@ npm run dist        # dist/에 universal .dmg (Apple Silicon·Intel 공용)
 app/            Electron (main·preload·config·renderer)
   renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
-data/listening/ 문제 은행·스키마·지시문·그림
-audio/listening/ 생성 음성 (git 제외)
+  renderer/js/vocab/     문자·어휘: index.js srs.js deck.js question-view.js practice.js exam.js
+data/listening/ 청해 문제 은행·스키마·지시문·그림
+data/vocab/     단어·문제·스키마
+audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/
 tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js
+                validate_vocab.py build_vocab_audio.py check_vocab_tts.py merge_words.py merge_questions.py
+                import_listening_vocab.py vocab_common.py smoke_vocab.js
 docs/           DESIGN.md (영역 구조·기록 형식·단어 데이터), OVERNIGHT_REPORT.md
 ```
 

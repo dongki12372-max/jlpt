@@ -1,6 +1,6 @@
 # 영역(section) 구조와 데이터 설계
 
-청해 이후에 문자·어휘(SRS 단어장 + JLPT 형식 문제)와 문법(빈칸, ★ 배열, 글의 문법)을 같은 앱에 추가할 수 있도록 정한 구조다. 지금 구현된 영역은 청해(`listening`) 하나다.
+청해 이후에 문자·어휘(SRS 단어장 + JLPT 형식 문제)와 문법(빈칸, ★ 배열, 글의 문법)을 같은 앱에 추가할 수 있도록 정한 구조다. 지금 구현된 영역은 청해(`listening`)와 문자·어휘(`vocab`)다.
 
 ## 1. 영역 구조
 
@@ -12,7 +12,7 @@
 | `app/main.js` | `SECTION_LOADERS.{영역}`이 그 영역 데이터를 읽는다. IPC는 `section:load`, `section:image` |
 | `app/renderer/js/{영역}/` | 영역 모듈. `index.js`가 `App.registerSection(id, { load, modes, summary })`로 등록하고, 화면 파일(`practice.js` 등)을 둔다 |
 | `app/renderer/js/` 바로 아래 | 영역 공통: `app.js`(홈·화면 전환), `player.js`, `util.js`, `boot.js`, (Phase 5) `storage.js` |
-| `tools/` | `validate.py`, `build_audio.py`는 청해 전용 (`load_listening_config()`). 새 영역의 도구는 따로 둔다 (예: `validate_vocab.py`) |
+| `tools/` | `validate.py`, `build_audio.py`는 청해 전용 (`load_listening_config()`). 문자·어휘는 `validate_vocab.py`, `build_vocab_audio.py`, `check_vocab_tts.py`, `merge_words.py`, `merge_questions.py`, `import_listening_vocab.py` (공통 `vocab_common.py`) |
 
 **새 영역을 켜는 순서**: `data/{영역}/` 데이터 → `main.js`에 로더 → `js/{영역}/index.js`에서 등록 → `index.html`에 스크립트 추가 → `config.sections.{영역}.enabled = true`.
 
@@ -69,9 +69,14 @@
 
 ## 3. 단어 데이터 형식 (청해 vocab → 단어장)
 
-지금은 형식만 정해 둔다. 수집 도구(`tools/collect_vocab.py`)와 단어장은 문자·어휘 영역을 시작할 때 만든다.
+> 구현됨 (Phase 8~13). 실제 형식은 `data/vocab/schema-words.json`, 파일은 `data/vocab/words/{n5,n4,n3}.json`.
+> 처음 설계와 달라진 점: 별도 수집 파일(collected.json) 없이 `tools/import_listening_vocab.py`가 청해 vocab과 단어 데이터의
+> 출처(`sources`: `wordlist` / `listening:{id}` / `vocab:{id}`)를 맞추고, 단어 데이터에 없는 청해 단어는 초안 목록으로 낸다.
+> 단어에는 `id`(`{레벨}-w-0001`, 음성 파일 이름), `pos`, `example`(text·furigana·meaning_ko), `similar`, `ttsText`가 더 있다.
+> 기록은 `progress.json`의 `sections.vocab.cards['{key}#reading' | '{key}#meaning']`(SRS 카드), `daily`, `studyDays`,
+> `priorityNew`(문제에서 틀린 새 단어), 그리고 문제 풀이 기록 `items`·`exams`(청해와 같은 형식).
 
-**수집 결과**: `data/vocab/collected.json`. 생성물이며, 검토한 뒤 단어장 원본(`data/vocab/{n5,n4,n3}.json`)으로 옮긴다.
+처음 설계 (참고):
 
 ```json
 {
