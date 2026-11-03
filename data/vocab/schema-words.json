@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "문자·어휘 단어 데이터 (data/vocab/words/{n5,n4,n3}.json)",
+  "description": "레벨별 파일에 단어 객체 배열. key(단어|읽기)는 세 파일 전체에서 하나만. 세부 규칙은 tools/validate_vocab.py.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "key", "word", "reading", "meaning_ko", "kind", "pos", "level", "example", "sources"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^n[345]-w-[0-9]{4}$", "description": "{레벨}-w-{4자리}. 음성 파일 이름" },
+      "key": { "type": "string", "pattern": "^[^|]+\\|[^|]+$", "description": "단어|읽기 — 기록(progress.json)의 기준" },
+      "word": { "type": "string", "minLength": 1, "description": "표기. 보통 한자로 쓰면 한자, 가나로 쓰면 가나" },
+      "reading": { "type": "string", "pattern": "^[ぁ-ゖァ-ヺー]+$", "description": "히라가나 읽기 (외래어는 가타카나)" },
+      "ttsText": { "type": "string", "minLength": 1, "description": "TTS가 word를 잘못 읽을 때만. 읽기는 reading과 같아야 함" },
+      "meaning_ko": { "type": "string", "minLength": 1, "description": "한국어 뜻. 여러 개면 자주 나오는 순서로 쉼표 구분, 최대 3개" },
+      "kind": { "enum": ["word", "expression"] },
+      "pos": { "enum": ["noun", "verb", "i-adj", "na-adj", "adverb", "katakana", "other"] },
+      "level": { "enum": ["N5", "N4", "N3"] },
+      "example": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "furigana", "meaning_ko"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "furigana": { "type": "string", "minLength": 1, "description": "{漢字|かんじ} 표기. 지우면 text와 같아야 함" },
+          "ttsText": { "type": "string", "minLength": 1, "description": "예문 읽기 교정 (후리가나 읽기와 같아야 함)" },
+          "meaning_ko": { "type": "string", "minLength": 1 }
+        }
+      },
+      "similar": { "type": "array", "items": { "type": "string", "pattern": "^[^|]+\\|[^|]+$" }, "description": "뜻이 비슷한 단어의 key (선택)" },
+      "sources": {
+        "type": "array", "minItems": 1,
+        "items": { "type": "string", "pattern": "^(wordlist|listening:n[345]-[a-z]+-[0-9]{3}|vocab:n[345]-[a-z]+-[0-9]{3})$" },
+        "description": "wordlist, listening:{문항 id}, vocab:{문항 id}"
+      }
+    }
+  }
+}

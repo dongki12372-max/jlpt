@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="120" cy="90" r="72"/>
+  <line x1="120.0" y1="30.0" x2="120.0" y2="20.0" stroke-width="3"/>
+  <line x1="152.5" y1="33.7" x2="155.0" y2="29.4"/>
+  <line x1="176.3" y1="57.5" x2="180.6" y2="55.0"/>
+  <line x1="180.0" y1="90.0" x2="190.0" y2="90.0" stroke-width="3"/>
+  <line x1="176.3" y1="122.5" x2="180.6" y2="125.0"/>
+  <line x1="152.5" y1="146.3" x2="155.0" y2="150.6"/>
+  <line x1="120.0" y1="150.0" x2="120.0" y2="160.0" stroke-width="3"/>
+  <line x1="87.5" y1="146.3" x2="85.0" y2="150.6"/>
+  <line x1="63.7" y1="122.5" x2="59.4" y2="125.0"/>
+  <line x1="60.0" y1="90.0" x2="50.0" y2="90.0" stroke-width="3"/>
+  <line x1="63.7" y1="57.5" x2="59.4" y2="55.0"/>
+  <line x1="87.5" y1="33.7" x2="85.0" y2="29.4"/>
+  <line x1="120" y1="90" x2="154.8" y2="80.7" stroke-width="5"/>
+  <line x1="120" y1="90" x2="120.0" y2="148.0" stroke-width="3"/>
+  <circle cx="120" cy="90" r="4" fill="currentColor"/>
+</svg>

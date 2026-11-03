@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "jlpt-listening/question-bank",
+  "title": "JLPT 청해 문제 은행 (레벨별 파일 하나 = 문항 배열)",
+  "description": "구조만 정의한다. 유형별 선택지 개수, 레벨-유형 조합, 정답 범위, 스크립트 일치 등은 tools/validate.py가 app/config.js를 읽어 검사한다.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/question" },
+  "$defs": {
+    "speaker": { "enum": ["M", "F", "M2", "F2"] },
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["speaker", "text"],
+      "properties": {
+        "speaker": { "$ref": "#/$defs/speaker" },
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "ttsText": { "$ref": "#/$defs/nonEmpty", "description": "edge-tts 읽기 교정용. 없으면 text를 읽힌다." }
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "$ref": "#/$defs/nonEmpty" },
+        "furigana": { "$ref": "#/$defs/nonEmpty", "description": "후리가나 표기 {漢字|かんじ}. 표기를 지우면 text와 같아야 한다. text에 한자가 있으면 필수 (validate.py 검사)" },
+        "ttsText": { "$ref": "#/$defs/nonEmpty", "description": "음성 선택지의 읽기 교정용. 바꾼 부분은 furigana 읽기와 일치해야 한다" },
+        "image": { "type": "string", "pattern": "^[a-z0-9-]+-opt[1-4]\\.svg$", "description": "data/listening/images/ 안의 파일명" }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions", "answer", "script", "scriptKo", "gloss", "optionsKo", "explanation_ko", "vocab", "tags"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^n[345]-(kadai|point|gaiyou|hatsuwa|sokuji)-[0-9]{3}$" },
+        "level": { "enum": ["N5", "N4", "N3"] },
+        "type": { "enum": ["kadai", "point", "gaiyou", "hatsuwa", "sokuji"] },
+        "situation": { "type": "string", "description": "맨 앞에 읽는 상황 설명. 즉시응답은 빈 문자열" },
+        "question": { "type": "string", "description": "질문 문장. 즉시응답은 빈 문자열" },
+        "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } },
+        "options": { "type": "array", "items": { "$ref": "#/$defs/option" }, "minItems": 3, "maxItems": 4 },
+        "spokenOptions": { "type": "boolean" },
+        "optionSpeaker": {
+          "enum": ["N", "M", "F", "M2", "F2"],
+          "description": "음성 선택지를 읽는 화자. 발화표현은 장면 속 말하는 사람, 즉시응답은 대답하는 사람. 생략하면 N(내레이터)"
+        },
+        "answer": { "type": "integer", "minimum": 1 },
+        "scene": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text_ko"],
+          "properties": {
+            "image": { "type": "string", "pattern": "^[a-z0-9-]+-scene\\.svg$" },
+            "text_ko": { "$ref": "#/$defs/nonEmpty" }
+          }
+        },
+        "script": { "$ref": "#/$defs/nonEmpty", "description": "줄마다 '화자：대사', 후리가나는 {漢字|かんじ}. 발화표현은 'N：상황+질문' 한 줄" },
+        "phone": { "type": "array", "items": { "enum": ["M", "F", "M2", "F2"] }, "minItems": 1, "uniqueItems": true,
+          "description": "전화·음성 메시지에서 전화 너머 화자 — 이 화자의 대사는 전화 음질(대역 필터)로 만든다" },
+        "scriptKo": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" }, "description": "스크립트 줄마다 한국어 해석 (줄 수 = script 줄 수)" },
+        "gloss": {
+          "type": "array", "description": "스크립트 줄마다 단어 사전 항목 (해설 화면에서 누르면 뜸). t는 그 줄에 나오는 그대로(활용형), 줄 안에서 앞에서부터 순서대로",
+          "items": { "type": "array", "items": {
+            "type": "object", "additionalProperties": false, "required": ["t", "w", "r", "m"],
+            "properties": {
+              "t": { "$ref": "#/$defs/nonEmpty", "description": "줄에 나온 모양 (후리가나를 뺀 글자)" },
+              "w": { "$ref": "#/$defs/nonEmpty", "description": "사전형 (문법 패턴은 〜로 시작)" },
+              "r": { "type": "string", "pattern": "^[〜ぁ-ゖァ-ヺー]+$", "description": "사전형의 읽기" },
+              "m": { "$ref": "#/$defs/nonEmpty", "description": "한국어 뜻 (이 문맥의 뜻 먼저)" }
+            } } }
+        },
+        "optionsKo": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" }, "description": "선택지마다 한국어 해석 (답한 뒤 표시)" },
+        "explanation_ko": { "$ref": "#/$defs/nonEmpty" },
+        "vocab": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["word", "reading", "meaning_ko", "kind"],
+            "properties": {
+              "word": { "$ref": "#/$defs/nonEmpty", "description": "word는 사전형, grammar는 〜로 시작" },
+              "reading": { "$ref": "#/$defs/nonEmpty" },
+              "meaning_ko": { "$ref": "#/$defs/nonEmpty" },
+              "kind": {
+                "enum": ["word", "expression", "grammar"],
+                "description": "word: 단어장 대상(사전형) / expression: 인사말·관용 표현(통째로 외움) / grammar: 〜로 시작하는 문법 패턴"
+              }
+            }
+          }
+        },
+        "tags": { "type": "array", "items": { "$ref": "#/$defs/nonEmpty" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "hatsuwa" } } }, "then": { "required": ["scene", "optionSpeaker"] } },
+        { "if": { "properties": { "type": { "const": "sokuji" } } }, "then": { "required": ["optionSpeaker"] } },
+        { "if": { "properties": { "type": { "not": { "const": "hatsuwa" } } } }, "then": { "not": { "required": ["scene"] } } }
+      ]
+    }
+  }
+}
