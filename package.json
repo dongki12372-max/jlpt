@@ -10,7 +10,9 @@
     "smoke": "npm run -s smoke:listening && npm run -s smoke:vocab",
     "dist": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --config electron-builder.config.js",
     "smoke:listening": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js",
-    "smoke:vocab": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_vocab.js"
+    "smoke:vocab": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_vocab.js",
+    "web:check": "env -u ELECTRON_RUN_AS_NODE electron tools/web_check.js",
+    "web:deploy": "sh tools/deploy_web.sh"
   },
   "devDependencies": {
     "electron": "^33.4.11",

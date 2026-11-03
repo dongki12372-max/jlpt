@@ -11,13 +11,26 @@ const Storage = (() => {
 
   const empty = () => ({ version: VERSION, settings: { common: {} }, sections: {} });
 
+  function normalize(raw) {
+    const d = raw && typeof raw === 'object' ? raw : empty();
+    d.version = d.version || VERSION;
+    d.settings = d.settings || {};
+    d.settings.common = d.settings.common || {};
+    d.sections = d.sections || {};
+    return d;
+  }
+
   async function load() {
-    const raw = await window.jlpt.loadProgress();
-    data = raw && typeof raw === 'object' ? raw : empty();
-    data.version = data.version || VERSION;
-    data.settings = data.settings || {};
-    data.settings.common = data.settings.common || {};
-    data.sections = data.sections || {};
+    data = normalize(await window.jlpt.loadProgress());
+  }
+
+  // 기록 파일 가져오기 (설정 화면): 지금 기록을 통째로 바꾼다. 형식이 아니면 예외
+  function replaceAll(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw) || typeof raw.sections !== 'object') {
+      throw new Error('JLPT 연습 기록 파일이 아닙니다.');
+    }
+    data = normalize(raw);
+    return save();
   }
 
   // 저장은 순서대로 (앞의 저장이 끝난 뒤 최신 상태를 쓴다)
@@ -85,7 +98,7 @@ const Storage = (() => {
   }
 
   return {
-    load, save, section, item, getSetting, setSetting, recordAnswer, removeFromReview, addExam, resetAll,
+    load, save, section, item, getSetting, setSetting, recordAnswer, removeFromReview, addExam, resetAll, replaceAll,
     get data() { return data; },
   };
 })();

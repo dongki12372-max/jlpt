@@ -69,7 +69,7 @@ const App = (() => {
       <header class="app-header">
         <div>
           <h1>${Util.esc(cfg.appName)}</h1>
-          <p class="dim">JLPT 연습 · 오프라인</p>
+          <p class="dim">JLPT 연습${window.jlpt.web ? '' : ' · 오프라인'}</p>
         </div>
         <button class="secondary" data-act="settings">설정</button>
       </header>
@@ -120,6 +120,14 @@ const App = (() => {
       <section class="card settings">
         <h2>기록</h2>
         <div class="row">
+          <span>기록을 파일로 저장하거나, 저장한 파일로 바꿔 넣습니다. ${window.jlpt.web ? '웹 버전은 기록이 이 브라우저에만 남으니 다른 기기로 옮길 때 씁니다.' : '웹 버전과 기록을 주고받을 때 씁니다.'}</span>
+          <span class="row-btns">
+            <button class="secondary" data-act="export">내보내기</button>
+            <button class="secondary" data-act="import">가져오기</button>
+            <input type="file" accept=".json,application/json" data-el="import-file" hidden>
+          </span>
+        </div>
+        <div class="row">
           <span>모든 풀이 기록, 오답노트, 실전 모의 기록, 설정을 지웁니다.</span>
           <button class="secondary danger" data-act="reset">기록 초기화</button>
         </div>
@@ -134,6 +142,31 @@ const App = (() => {
       saved();
     });
     active.filter((id) => modules[id].settings).forEach((id) => modules[id].settings.bind(root(), saved));
+    root().querySelector('[data-act="export"]').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(Storage.data, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const d = new Date();
+      const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      a.download = `jlpt-기록-${ymd}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    const fileInput = root().querySelector('[data-el="import-file"]');
+    root().querySelector('[data-act="import"]').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      try {
+        const raw = JSON.parse(await file.text());
+        if (!window.confirm('지금 기록을 이 파일의 기록으로 바꿀까요? 지금 기록은 사라집니다.')) return;
+        await Storage.replaceAll(raw);
+        showSettings();
+        root().querySelector('[data-el="saved"]').textContent = '기록을 가져왔습니다.';
+      } catch (e) {
+        root().querySelector('[data-el="saved"]').textContent = `가져오지 못했습니다: ${e.message}`;
+      }
+    });
     root().querySelector('[data-act="reset"]').addEventListener('click', async () => {
       if (!window.confirm('모든 기록과 설정을 초기화할까요? 되돌릴 수 없습니다.')) return;
       await Storage.resetAll();

@@ -28,6 +28,9 @@ html, body {
   line-height: 1.6;
 }
 :lang(ja) { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", -apple-system, sans-serif; }
+/* 한국어는 어절 단위로 줄바꿈 (일본어는 글자 단위 그대로), 넘치면 어디서든 끊는다 */
+body { word-break: keep-all; overflow-wrap: anywhere; }
+:lang(ja) { word-break: normal; }
 
 #app { max-width: 860px; margin: 0 auto; padding: 28px 24px 80px; }
 
@@ -385,3 +388,68 @@ ul.plain li { padding: 3px 0; }
 .dict-deck { display: flex; gap: 10px; align-items: baseline; }
 .script .u.speaking { color: var(--ok); }
 .script .u.speaking rt { color: var(--ok); }
+.row-btns { display: inline-flex; gap: 8px; flex: none; }
+
+/* ============== 터치 화면 (폰·태블릿) ============== */
+@media (hover: none) and (pointer: coarse) {
+  .kbd { display: none; }
+  html { -webkit-tap-highlight-color: transparent; }
+}
+
+/* ============== 좁은 화면 (폰, 폴드 접은 화면) ============== */
+@media (max-width: 600px) {
+  html, body { font-size: 15px; }
+  #app { padding: 14px 12px 64px; }
+  h1 { font-size: 21px; }
+  h2 { font-size: 17px; margin: 18px 0 10px; }
+  .card { padding: 12px 14px; }
+
+  .section-tabs { gap: 8px; }
+  .section-tab { flex: 1; flex-direction: column; gap: 0; padding: 8px 12px; }
+  .level-tabs .tab { flex: 1; padding: 6px 0; }
+  .modes { grid-template-columns: 1fr; gap: 8px; }
+  .mode-card { padding: 12px 14px; }
+  .type-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .type-card { padding: 12px; }
+  .table th, .table td { padding: 6px 4px; font-size: 13px; }
+  .table th, .table .num { white-space: nowrap; }
+
+  .topbar { flex-wrap: wrap; gap: 6px 12px; }
+  .player { flex-wrap: wrap; }
+  .player .progress { flex-basis: calc(100% - 110px); }
+  .rates { width: 100%; justify-content: center; }
+  .opt { padding: 10px 12px; font-size: 16px; gap: 10px; }
+  .next-row { flex-wrap: wrap; }
+  .next-row > button { flex: 1; }
+  .next-row.left > button { flex: none; }
+
+  .script .line { gap: 8px; padding: 6px 4px; font-size: 15px; }
+  .script .spk { min-width: 2em; }
+  .explain-head { flex-wrap: wrap; gap: 4px; }
+  .result-list { columns: 1; }
+  .score { font-size: 36px; }
+  .badge { margin-left: 0; }
+
+  .settings .row { flex-wrap: wrap; gap: 8px; }
+
+  .deck-counts { gap: 24px; }
+  .deck-counts .big { font-size: 28px; }
+  .flash { padding: 20px 12px 18px; }
+  .card-word { font-size: 36px; }
+  .rate-row { gap: 6px; }
+  .rate-btn { padding: 8px 2px; }
+  .filters select { flex: 1; }
+  .filters input { flex-basis: 100%; min-width: 0; }
+  .word-row { grid-template-columns: auto 1fr auto auto; grid-template-areas: "w r lv st" "m m m m"; row-gap: 0; }
+  .word-row .w { grid-area: w; }
+  .word-row .r { grid-area: r; font-size: 13px; }
+  .word-row .m { grid-area: m; font-size: 13px; color: var(--text-dim); }
+  .word-row .lv { grid-area: lv; }
+  .word-row .st { grid-area: st; }
+
+  .vq .stem { font-size: 19px; }
+  .opt-notes li { grid-template-columns: 24px 1fr; }
+  .opt-notes .note { grid-column: 2; }
+  .exam-top .primary { margin-left: 0; }
+  .dict-pop { max-width: calc(100vw - 16px); }
+}

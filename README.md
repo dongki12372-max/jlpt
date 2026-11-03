@@ -26,6 +26,16 @@ JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라
 
 풀이 기록과 설정은 `~/Library/Application Support/JLPT 청해 연습/progress.json`에 저장됩니다. 앱의 설정 화면에서 초기화할 수 있습니다.
 
+## 웹 버전 (폰·다른 컴퓨터)
+
+같은 앱을 GitHub Pages에 올려 브라우저로도 씁니다: **https://dongki12372-max.github.io/jlpt/**
+
+- 폰(폴드 접은 화면 포함)과 펼친 화면·컴퓨터 화면에 맞춰 레이아웃이 바뀝니다.
+- 풀이 기록은 브라우저마다 따로 저장됩니다(localStorage). 기기를 옮길 때는 설정 → 기록 → **내보내기**로 파일을 받고, 다른 기기에서 **가져오기**를 누릅니다. 데스크톱 앱과도 같은 파일로 주고받을 수 있습니다.
+- 웹 버전은 음성을 그때그때 인터넷으로 받습니다 (데스크톱 앱은 그대로 오프라인).
+- 올리기: `npm run web:deploy` (`tools/deploy_web.sh` — 검사 → `.web-deploy/`에 화면·데이터·음성 모으기 → `gh-pages` 브랜치 push). main 브랜치에는 여전히 `audio/`가 들어가지 않습니다.
+- 확인: `npm run web:check` (리포를 http로 띄워 폰·폴드 화면 크기로 주요 화면을 눌러 보고, 가로 넘침·기록 저장·가져오기를 검사).
+
 ## 개발 환경
 
 필요한 것: Node.js 22 이상, Python 3.13, ffmpeg (`brew install ffmpeg`).
@@ -95,13 +105,13 @@ npm run dist        # dist/에 universal .dmg (Apple Silicon·Intel 공용)
 
 ```
 app/            Electron (main·preload·config·renderer)
-  renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js
+  renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(웹 버전 데이터·기록)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
   renderer/js/vocab/     문자·어휘: index.js srs.js deck.js question-view.js practice.js exam.js
 data/listening/ 청해 문제 은행·스키마·지시문·그림
 data/vocab/     단어·문제·스키마
 audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/
-tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js
+tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js web_check.js deploy_web.sh
                 validate_vocab.py build_vocab_audio.py check_vocab_tts.py merge_words.py merge_questions.py
                 import_listening_vocab.py vocab_common.py smoke_vocab.js
 docs/           DESIGN.md (영역 구조·기록 형식·단어 데이터), OVERNIGHT_REPORT.md
