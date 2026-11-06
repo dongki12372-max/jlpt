@@ -10,6 +10,7 @@
 //     autoplay,                 문항을 열 때 자동 재생
 //     onAnswer(n, correct),     답을 골랐을 때 (풀기 전 상태에서만)
 //     nextLabel, onNext,        해설 아래 '다음' 버튼
+//     onPrev, onSkip,           있으면 상단에 「‹ 이전」「건너뛰기 ›」 (← → 키)
 //   })
 // ============================================================
 const QuestionView = (() => {
@@ -52,7 +53,7 @@ const QuestionView = (() => {
       <div class="topbar">
         <button class="link" data-act="back">${Util.esc(opts.backLabel)}</button>
         <span class="crumb">${opts.crumb}</span>
-        <span class="pos">${Util.esc(opts.pos || '')}</span>
+        ${Util.stepNav(opts, answered)}
       </div>
 
       <section class="player card">
@@ -115,6 +116,7 @@ const QuestionView = (() => {
       $$('[data-rate]').forEach((x) => x.classList.toggle('active', x === b));
     }));
     $('[data-act="back"]').addEventListener('click', opts.onBack);
+    Util.bindStepNav(document, opts);
 
     // ---- 선택지 ----
     const imgOptions = q.options.every((o) => o.image);
@@ -152,6 +154,8 @@ const QuestionView = (() => {
       if (answered !== null || n < 1 || n > q.options.length) return;
       answered = n;
       if (opts.onAnswer) opts.onAnswer(n, n === q.answer);
+      const skip = $('[data-act="step-skip"]');
+      if (skip) skip.textContent = '다음 ›';
       renderOptions();
       renderResult();
     }
@@ -258,6 +262,8 @@ const QuestionView = (() => {
       } else if (e.key === 'Enter' && answered !== null && opts.onNext) {
         e.preventDefault();
         opts.onNext();
+      } else if (Util.stepKey(e, opts)) {
+        e.preventDefault();
       } else if (e.key === 'Escape') {
         opts.onBack();
       }

@@ -4,7 +4,7 @@
 //   해설: 완성 문장(후리가나 토글) ▶ 문장 음성, 한국어 해설, 오답 선택지별 설명, 이 문항의 단어 카드 미리보기
 //   단축키: 1~4 답 선택, Enter 다음, F 후리가나 토글, Esc 뒤로
 //
-//   VocabQuestionView.show(q, { crumb, pos, backLabel, onBack, answered, onAnswer(n, correct), nextLabel, onNext })
+//   VocabQuestionView.show(q, { crumb, pos, backLabel, onBack, answered, onAnswer(n, correct), nextLabel, onNext, onPrev, onSkip })
 //     answered: undefined 풀기 전 / 1~4 고른 답으로 해설 / 0 무응답으로 해설
 // ============================================================
 const VocabQuestionView = (() => {
@@ -95,7 +95,7 @@ const VocabQuestionView = (() => {
       <div class="topbar">
         <button class="link" data-act="back">${Util.esc(opts.backLabel)}</button>
         <span class="crumb">${opts.crumb}</span>
-        <span class="pos">${Util.esc(opts.pos || '')}</span>
+        ${Util.stepNav(opts, answered)}
       </div>
       <section class="card vq">
         <p class="instruction" lang="ja"><span class="type-label">${tc.label_ja}</span> ${Util.esc(instruction(q.type))}</p>
@@ -106,6 +106,7 @@ const VocabQuestionView = (() => {
     `, { onKey });
 
     $('[data-act="back"]').addEventListener('click', opts.onBack);
+    Util.bindStepNav(document, opts);
 
     function renderOptions() {
       const box = $('[data-el="options"]');
@@ -117,6 +118,8 @@ const VocabQuestionView = (() => {
       if (answered !== null || n < 1 || n > 4) return;
       answered = n;
       if (opts.onAnswer) opts.onAnswer(n, n === q.answer);
+      const skip = $('[data-act="step-skip"]');
+      if (skip) skip.textContent = '다음 ›';
       renderOptions();
       renderResult();
     }
@@ -138,7 +141,8 @@ const VocabQuestionView = (() => {
         applyFurigana();
         const cb = $('[data-el="furi"]');
         if (cb) cb.checked = prefs().furigana;
-      } else if (e.key === 'Escape') opts.onBack();
+      } else if (Util.stepKey(e, opts)) e.preventDefault();
+      else if (e.key === 'Escape') opts.onBack();
     }
 
     applyFurigana();

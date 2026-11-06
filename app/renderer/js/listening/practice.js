@@ -2,7 +2,7 @@
 // 청해 · 유형별 연습: 유형 선택 → 문항 풀이(QuestionView) → 결과
 // ============================================================
 const Practice = (() => {
-  let session = null;   // { level, type, list, idx, results: [{id, correct}] }
+  let session = null;   // { level, type, list, idx, results: {id: {n, correct}} } — 건너뛴 문항은 results에 없음
 
   const cfg = () => Listening.cfg;
   const prefs = () => Listening.prefs;
@@ -57,7 +57,7 @@ const Practice = (() => {
       level, type,
       list,
       idx: 0,
-      results: [],
+      results: {},
     };
     showQuestion();
   }
@@ -67,18 +67,22 @@ const Practice = (() => {
     const q = session.list[session.idx];
     const tc = cfg().types[q.type];
     const last = session.idx === session.list.length - 1;
+    const done = session.results[q.id];   // 이전으로 돌아온 문항은 해설부터
     QuestionView.show(q, {
       crumb: `${q.level} · <span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`,
       pos: `${session.idx + 1} / ${session.list.length}`,
       backLabel: '← 유형 선택',
       onBack: () => showSetup(session.level),
-      autoplay: true,
+      answered: done ? done.n : undefined,
+      autoplay: !done,
       onAnswer: (n, correct) => {
-        session.results.push({ id: q.id, correct });
+        session.results[q.id] = { n, correct };
         Listening.recordAnswer(q, correct);
       },
       nextLabel: last ? '결과 보기' : '다음 문제',
       onNext: next,
+      onSkip: next,
+      onPrev: session.idx > 0 ? () => { session.idx -= 1; showQuestion(); } : null,
     });
   }
 
@@ -94,12 +98,8 @@ const Practice = (() => {
   // ---------- 결과 ----------
   function showDone() {
     const { results, list, level, type } = session;
-    const correct = results.filter((r) => r.correct).length;
     const tc = cfg().types[type];
-    const rows = list.map((q, i) => {
-      const r = results.find((x) => x.id === q.id);
-      return `<li class="${r && r.correct ? 'ok' : 'ng'}"><span class="mark">${r && r.correct ? '○' : '×'}</span> ${i + 1}. ${q.id}</li>`;
-    }).join('');
+    const rows = list.map((q, i) => Util.resultRow(results[q.id], `${i + 1}. ${q.id}`)).join('');
 
     App.setScreen(`
       <div class="topbar">
@@ -107,7 +107,7 @@ const Practice = (() => {
         <span class="crumb">${level} · <span lang="ja">${tc.label_ja}</span> ${tc.label_ko}</span>
       </div>
       <section class="card done">
-        <h2>${correct} / ${list.length} 정답</h2>
+        ${Util.resultHead(list, results)}
         <ul class="result-list">${rows}</ul>
         <div class="next-row">
           <button class="secondary" data-act="back">유형 선택</button>

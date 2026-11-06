@@ -59,45 +59,49 @@ const VocabPractice = (() => {
 
   // 문항 목록을 차례로 푼다 (연습·오답노트 공용)
   function run({ level, list, title, back, again, review = false }) {
-    session = { list, idx: 0, results: [] };
+    session = { list, idx: 0, results: {} };   // results: {id: {n, correct}} — 건너뛴 문항은 없음
     showQuestion();
 
     function showQuestion() {
       const q = session.list[session.idx];
       const tc = Vocab.cfg.types[q.type];
       const last = session.idx === session.list.length - 1;
+      const done = session.results[q.id];   // 이전으로 돌아온 문항은 해설부터
+      const next = () => {
+        if (session.idx < session.list.length - 1) { session.idx += 1; showQuestion(); } else showDone();
+      };
       VocabQuestionView.show(q, {
         crumb: `${level} · ${review ? '오답노트' : `<span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`}`,
         pos: `${session.idx + 1} / ${session.list.length}`,
         backLabel: review ? '← 오답노트' : '← 유형 선택',
         onBack: back,
+        answered: done ? done.n : undefined,
         onAnswer: (n, correct) => {
-          session.results.push({ id: q.id, correct });
+          session.results[q.id] = { n, correct };
           record(q, correct);
         },
         nextLabel: last ? '결과 보기' : '다음 문제',
-        onNext: () => {
-          if (session.idx < session.list.length - 1) { session.idx += 1; showQuestion(); } else showDone();
-        },
+        onNext: next,
+        onSkip: next,
+        onPrev: session.idx > 0 ? () => { session.idx -= 1; showQuestion(); } : null,
       });
     }
 
     function showDone() {
       const { results } = session;
-      const correct = results.filter((r) => r.correct).length;
       const rows = list.map((q, i) => {
-        const r = results.find((x) => x.id === q.id);
+        const r = results[q.id];
         const cleared = review && r && r.correct && !(Vocab.record(q) || {}).review;
-        return `<li class="${r && r.correct ? 'ok' : 'ng'}"><span class="mark">${r && r.correct ? '○' : '×'}</span> ${i + 1}. ${q.id}${cleared ? ' <span class="badge ok">오답노트에서 빠짐</span>' : ''}</li>`;
+        return Util.resultRow(r, `${i + 1}. ${q.id}${cleared ? ' <span class="badge ok">오답노트에서 빠짐</span>' : ''}`);
       }).join('');
-      const pulled = results.filter((r) => !r.correct).length;
+      const pulled = Object.values(results).filter((r) => !r.correct).length;
       App.setScreen(`
         <div class="topbar">
           <button class="link" data-act="back">← 뒤로</button>
           <span class="crumb">${level} · ${Util.esc(title)}</span>
         </div>
         <section class="card done">
-          <h2>${correct} / ${list.length} 정답</h2>
+          ${Util.resultHead(list, results)}
           ${pulled ? `<p class="dim">틀린 문항의 단어를 단어장 오늘 복습에 넣었습니다.</p>` : ''}
           <ul class="result-list">${rows}</ul>
           <div class="next-row">
