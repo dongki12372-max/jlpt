@@ -75,8 +75,39 @@ async function runViewport(base, vp) {
   ok(await waitFor('.opt'), `[${vp.name}] 청해 문항`);
   await screen('listening-question');
   await js('Player.stop()');
+  // 문항 이동: 건너뛰기 → 이전 → 답 → 건너뛰기 → 이전이면 해설부터
+  const pos = () => js(`document.querySelector('.step-nav > span').textContent`);
+  ok(await js(`document.querySelector('[data-act="step-prev"]').disabled`), `[${vp.name}] 첫 문항은 이전 없음`);
+  await click('[data-act="step-skip"]');
+  await waitFor('.opt');
+  ok((await pos()).startsWith('2 /'), `[${vp.name}] 건너뛰기 → 다음 문항`, await pos());
+  await click('[data-act="step-prev"]');
+  await waitFor('.opt');
+  ok((await pos()).startsWith('1 /') && await js(`!!document.querySelector('button.opt')`), `[${vp.name}] 이전 → 안 푼 문항은 다시 풀기`, await pos());
+  await js('Player.stop()');
   await click('button.opt');
   ok(await waitFor('.script .line'), `[${vp.name}] 청해 해설 스크립트`);
+  await click('[data-act="step-skip"]');
+  await waitFor('.opt');
+  await js('Player.stop()');
+  await click('[data-act="step-prev"]');
+  ok(await waitFor('.script .line') && !(await js(`!!document.querySelector('button.opt')`)), `[${vp.name}] 이전 → 푼 문항은 해설부터`);
+  if (vp.name === 'fold-cover') {
+    // 나머지를 모두 건너뛰면 결과: 1문항 푼 것으로, 나머지는 –
+    for (let i = 0; i < 40 && !(await js(`!!document.querySelector('.done')`)); i++) { await click('[data-act="step-skip"]'); await sleep(60); }
+    const head = await js(`document.querySelector('.done h2').textContent + ' | ' + (document.querySelector('.done p.dim') || {}).textContent`);
+    ok(/\/ 1 정답/.test(head) && /건너뛴 문항 \d+개/.test(head), `[${vp.name}] 결과: 푼 문항만 채점, 건너뛴 문항 수`, head);
+    ok(await js(`document.querySelectorAll('.result-list .skip').length`) > 0, `[${vp.name}] 결과 목록에 건너뜀 표시`);
+    await screen('practice-done');
+    await home();
+    await click('[data-mode="practice"]');
+    await waitFor('[data-type]');
+    await click('[data-type]:not(:disabled)');
+    await waitFor('.opt');
+    await js('Player.stop()');
+    await click('button.opt');
+    await waitFor('.script .line');
+  }
   await click('.script .gl');
   ok(await waitFor('.dict-pop'), `[${vp.name}] 사전 창`);
   const pop = await js(`(() => { const r = document.querySelector('.dict-pop').getBoundingClientRect(); return { left: r.left, right: r.right }; })()`);

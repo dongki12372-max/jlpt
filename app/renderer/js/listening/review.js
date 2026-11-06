@@ -8,7 +8,7 @@ const Review = (() => {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  let session = null;   // { level, list, idx, results: [{id, correct, cleared}] }
+  let session = null;   // { level, list, idx, results: {id: {n, correct, cleared}} } — 건너뛴 문항은 없음
 
   // ---------- 목록 ----------
   function show(level) {
@@ -71,7 +71,7 @@ const Review = (() => {
       .filter((q) => !type || q.type === type)
       .sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
     if (!list.length) { show(level); return; }
-    session = { level, list, idx: 0, results: [] };
+    session = { level, list, idx: 0, results: {} };   // results: {id: {n, correct, cleared}}
     showQuestion();
   }
 
@@ -79,31 +79,34 @@ const Review = (() => {
     const q = session.list[session.idx];
     const tc = cfg().types[q.type];
     const last = session.idx === session.list.length - 1;
+    const done = session.results[q.id];
+    const next = () => {
+      if (session.idx < session.list.length - 1) { session.idx += 1; showQuestion(); } else { showDone(); }
+    };
     QuestionView.show(q, {
       crumb: `${q.level} · 오답노트 · <span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`,
       pos: `${session.idx + 1} / ${session.list.length}`,
       backLabel: '← 오답노트',
       onBack: () => show(session.level),
-      autoplay: true,
+      answered: done ? done.n : undefined,
+      autoplay: !done,
       onAnswer: (n, correct) => {
         const r = Listening.recordAnswer(q, correct);
-        session.results.push({ id: q.id, correct, cleared: !r.review });
+        session.results[q.id] = { n, correct, cleared: !r.review };
       },
       nextLabel: last ? '결과 보기' : '다음 문제',
-      onNext: () => {
-        if (session.idx < session.list.length - 1) { session.idx += 1; showQuestion(); } else { showDone(); }
-      },
+      onNext: next,
+      onSkip: next,
+      onPrev: session.idx > 0 ? () => { session.idx -= 1; showQuestion(); } : null,
     });
   }
 
   function showDone() {
     const { level, list, results } = session;
-    const correct = results.filter((r) => r.correct).length;
-    const cleared = results.filter((r) => r.cleared).length;
+    const cleared = Object.values(results).filter((r) => r.cleared).length;
     const rows = list.map((q, i) => {
-      const r = results.find((x) => x.id === q.id);
-      const mark = r && r.correct ? '○' : '×';
-      return `<li class="${r && r.correct ? 'ok' : 'ng'}"><span class="mark">${mark}</span> ${i + 1}. ${q.id}${r && r.cleared ? ' <span class="badge ok">빠짐</span>' : ''}</li>`;
+      const r = results[q.id];
+      return Util.resultRow(r, `${i + 1}. ${q.id}${r && r.cleared ? ' <span class="badge ok">빠짐</span>' : ''}`);
     }).join('');
 
     App.setScreen(`
@@ -112,7 +115,7 @@ const Review = (() => {
         <span class="crumb">${level} · 오답노트 결과</span>
       </div>
       <section class="card done">
-        <h2>${correct} / ${list.length} 정답</h2>
+        ${Util.resultHead(list, results)}
         <p class="dim">이번에 오답노트에서 빠진 문항: ${cleared}개 · 남은 문항: ${Listening.reviewList(level).length}개</p>
         <ul class="result-list">${rows}</ul>
         <div class="next-row">

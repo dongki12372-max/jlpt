@@ -390,6 +390,13 @@ ul.plain li { padding: 3px 0; }
 .script .u.speaking rt { color: var(--ok); }
 .row-btns { display: inline-flex; gap: 8px; flex: none; }
 
+/* ============== 문항 이동 (이전·건너뛰기) ============== */
+.step-nav { display: inline-flex; align-items: center; gap: 6px; }
+.step { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; font-size: 13px; color: var(--text); }
+.step:not(:disabled):hover { border-color: var(--accent); }
+.result-list .skip .mark { color: var(--text-dim); }
+.result-list .skip { color: var(--text-dim); }
+
 /* ============== 터치 화면 (폰·태블릿) ============== */
 @media (hover: none) and (pointer: coarse) {
   .kbd { display: none; }
@@ -415,6 +422,8 @@ ul.plain li { padding: 3px 0; }
   .table th, .table .num { white-space: nowrap; }
 
   .topbar { flex-wrap: wrap; gap: 6px 12px; }
+  .topbar .step-nav { margin-left: 0; width: 100%; justify-content: space-between; }
+  .step { padding: 6px 16px; font-size: 14px; }
   .player { flex-wrap: wrap; }
   .player .progress { flex-basis: calc(100% - 110px); }
   .rates { width: 100%; justify-content: center; }
