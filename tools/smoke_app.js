@@ -1,7 +1,7 @@
 // ============================================================
 // 개발용 스모크 테스트: 앱을 실제로 띄워 화면을 눌러 보고, 확인 결과와 스크린샷을 남긴다.
 //   SMOKE_OUT=<출력 폴더> npx electron tools/smoke_app.js
-// 앱 코드(app/main.js)는 건드리지 않고 바깥에서 창을 조작한다.
+// 앱 코드는 건드리지 않고 바깥에서 창을 조작한다 (웹 앱을 tools/test_host.js가 띄운다).
 // ============================================================
 const { app } = require('electron');
 const path = require('path');
@@ -14,7 +14,7 @@ fs.mkdirSync(OUT, { recursive: true });
 if (!process.env.JLPT_USER_DATA) {
   process.env.JLPT_USER_DATA = fs.mkdtempSync(path.join(require('os').tmpdir(), 'jlpt-smoke-'));
 }
-require('../app/main.js');
+require('./test_host.js');
 
 const consoleErrors = [];
 const checks = [];

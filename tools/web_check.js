@@ -1,17 +1,16 @@
 // ============================================================
-// 웹 버전 확인: 리포 폴더를 http로 띄우고 (preload 없이 = web.js 경로) 폰·폴드 화면 크기로 주요 화면을 눌러 본다.
+// 웹 버전 확인: 리포 폴더를 http로 띄우고 폰·폴드 화면 크기로 주요 화면을 눌러 본다.
 //   - 화면마다 가로 스크롤이 생기지 않는지 (폭 넘침) 검사
 //   - 기록이 localStorage에 남는지 (새로고침 뒤), 내보내기 형식을 다시 가져올 수 있는지
 //   WEB_OUT=<출력 폴더> npx electron tools/web_check.js   (스크린샷은 WEB_OUT, 기본 smoke-out/web)
 // ============================================================
 const { app, BrowserWindow, session } = require('electron');
-const http = require('http');
+const { createStaticServer } = require('./static_server');
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = process.env.WEB_OUT || path.join(ROOT, 'smoke-out', 'web');
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg' };
 // 폴드 접은 화면 · 펼친 화면 · 일반 폰
 const VIEWPORTS = [
   { name: 'fold-cover', width: 384, height: 860 },
@@ -53,12 +52,10 @@ function fakeFirestore(req, res) {
 
 function serve() {
   return new Promise((resolve) => {
-    const server = http.createServer((req, res) => {
-      if (req.url.startsWith('/fs/')) { fakeFirestore(req, res); return; }
-      const p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-      if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end(); return; }
-      res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' });
-      fs.createReadStream(p).on('error', () => res.destroy()).pipe(res);
+    const server = createStaticServer((req, res) => {
+      if (!req.url.startsWith('/fs/')) return false;
+      fakeFirestore(req, res);
+      return true;
     });
     server.listen(0, '127.0.0.1', () => resolve(server));
   });
@@ -83,7 +80,7 @@ async function runViewport(base, vp) {
 
   await load(wc, `${base}/app/renderer/index.html`);
   ok(await waitFor('.mode-card', 15000), `[${vp.name}] 웹 버전 홈이 뜸`);
-  ok(await js('window.jlpt.web === true'), `[${vp.name}] preload 없이 web.js 사용`);
+  ok(await js('window.jlpt.web === true'), `[${vp.name}] web.js 데이터 읽기`);
   ok(await js(`window.innerWidth`) === vp.width, `[${vp.name}] 화면 폭`, await js('window.innerWidth'));
   await screen('home-listening');
 
@@ -325,6 +322,10 @@ async function storageTests(base) {
   ok(!(await js(`Storage.item('listening', 'n5-kadai-001')`)), '초기화하면 기록이 지워짐');
   await js(`Storage.replaceAll(JSON.parse(${JSON.stringify(exported)}))`);
   ok((await js(`Storage.item('listening', 'n5-kadai-001')`) || {}).review === true, '내보낸 기록을 가져오면 되살아남');
+  // 가져오기 = 합치기: 지금 기록은 남고 파일 기록이 더해진다
+  await js(`Storage.recordAnswer('listening', 'n5-kadai-009', true); true`);
+  await js(`Storage.importMerge(JSON.parse(${JSON.stringify(exported)}))`);
+  ok(await js(`!!Storage.item('listening', 'n5-kadai-009') && Storage.item('listening', 'n5-kadai-001').review === true`), '가져오기는 지금 기록과 합침');
   const bad = await js(`(() => { try { Storage.replaceAll([1, 2]); return 'accepted'; } catch (e) { return e.message; } })()`);
   ok(bad !== 'accepted', '기록 파일이 아니면 가져오지 않음', bad);
   await js('Storage.resetAll()');

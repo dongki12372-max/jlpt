@@ -1,14 +1,12 @@
 {
   "name": "jlpt-listening",
   "version": "0.4.0",
-  "description": "JLPT 청해 연습 — 오프라인 데스크톱 앱 (앱 이름은 app/config.js의 appName)",
-  "main": "app/main.js",
+  "description": "JLPT 청해·문자어휘·문법 연습 — 웹 앱 (GitHub Pages). Electron은 자동 테스트에만 쓴다",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "start": "node tools/serve.js",
     "smoke": "npm run -s smoke:listening && npm run -s smoke:vocab && npm run -s smoke:grammar",
-    "dist": "env -u ELECTRON_RUN_AS_NODE electron-builder --mac --config electron-builder.config.js",
     "smoke:listening": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js",
     "smoke:vocab": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_vocab.js",
     "smoke:grammar": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_grammar.js",
@@ -16,7 +14,6 @@
     "web:deploy": "sh tools/deploy_web.sh"
   },
   "devDependencies": {
-    "electron": "^33.4.11",
-    "electron-builder": "^25.1.8"
+    "electron": "^33.4.11"
   }
 }

@@ -9,12 +9,12 @@
 | `app/config.js` | `levels`(전 영역 공통), `sectionOrder`, `sections.{영역}` (`label_ko`, `label_ja`, `enabled` + 영역 전용 설정). 청해의 유형·실전 구성·타이밍은 `sections.listening` 안에 있다. `reviewClearStreak`은 전 영역 공통 |
 | `data/{영역}/` | 영역 데이터. 청해: `questions/{n5,n4,n3}.json`, `schema.json`, `intros.json`, `images/` |
 | `audio/{영역}/` | 생성 음성과 `manifest.json` (git 제외). 청해: `audio/listening/{level}/{id}.mp3` |
-| `app/main.js` | `SECTION_LOADERS.{영역}`이 그 영역 데이터를 읽는다. IPC는 `section:load`, `section:image` |
+| `app/renderer/js/web.js` | `LOADERS.{영역}`이 그 영역 데이터를 fetch로 읽는다 (`window.jlpt.loadSection`, `readImage`). 기록은 localStorage (`loadProgress`·`saveProgress`). 예전 Electron 앱의 main.js·preload.js는 0.4.0 뒤에 없앴다 |
 | `app/renderer/js/{영역}/` | 영역 모듈. `index.js`가 `App.registerSection(id, { load, modes, summary })`로 등록하고, 화면 파일(`practice.js` 등)을 둔다 |
 | `app/renderer/js/` 바로 아래 | 영역 공통: `app.js`(홈·화면 전환), `player.js`, `util.js`, `boot.js`, (Phase 5) `storage.js` |
 | `tools/` | `validate.py`, `build_audio.py`는 청해 전용 (`load_listening_config()`). 문자·어휘는 `validate_vocab.py`, `build_vocab_audio.py`, `check_vocab_tts.py`, `merge_words.py`, `merge_questions.py`, `import_listening_vocab.py` (공통 `vocab_common.py`) |
 
-**새 영역을 켜는 순서**: `data/{영역}/` 데이터 → `main.js`에 로더 → `js/{영역}/index.js`에서 등록 → `index.html`에 스크립트 추가 → `config.sections.{영역}.enabled = true`.
+**새 영역을 켜는 순서**: `data/{영역}/` 데이터 → `web.js`에 로더 → `js/{영역}/index.js`에서 등록 → `index.html`에 스크립트 추가 → `config.sections.{영역}.enabled = true`.
 
 홈 화면은 영역 탭 → 레벨 탭(N5·N4·N3) → 그 영역의 모드 버튼 → 영역 요약 순서다. `enabled=false`이거나 모듈이 없는 영역은 탭에 '준비 중'으로 비활성 표시된다.
 

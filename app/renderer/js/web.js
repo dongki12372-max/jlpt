@@ -1,11 +1,8 @@
 // ============================================================
-// 웹 버전 (GitHub Pages): preload가 없으면 같은 API(window.jlpt)를 브라우저로 채운다
-//   데이터·음성은 앱과 같은 폴더 구조로 함께 올리고 fetch로 읽는다 (tools/deploy_web.sh).
-//   기록은 이 브라우저의 localStorage — 기기마다 따로이고, 설정 화면의 내보내기·가져오기로 옮긴다.
+// 데이터·기록 읽기 (window.jlpt): 데이터·음성은 리포와 같은 폴더 구조로 함께 올리고 fetch로 읽는다 (tools/deploy_web.sh).
+//   기록은 이 브라우저의 localStorage — 기기 사이는 sync.js(동기화 코드)나 설정 화면의 내보내기·가져오기로 맞춘다.
 // ============================================================
 (() => {
-  if (window.jlpt) return;   // Electron: preload가 이미 넣었다
-
   const KEY = 'jlpt-progress';
   const LEVEL_KEYS = Object.keys(window.APP_CONFIG.levels).map((l) => l.toLowerCase());
   const DATA = '../../data';
@@ -20,7 +17,7 @@
   const perLevel = async (dir) =>
     Object.fromEntries(await Promise.all(LEVEL_KEYS.map(async (k) => [k, await getJson(`${dir}/${k}.json`, [])])));
 
-  // app/main.js의 SECTION_LOADERS와 같은 모양
+  // 영역별 데이터: { questions, manifest } 등 — 각 영역 index.js의 load()가 쓴다
   const LOADERS = {
     listening: async () => ({
       questions: await perLevel(`${DATA}/listening/questions`),

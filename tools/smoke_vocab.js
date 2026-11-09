@@ -13,7 +13,7 @@ fs.mkdirSync(OUT, { recursive: true });
 if (!process.env.JLPT_USER_DATA) {
   process.env.JLPT_USER_DATA = fs.mkdtempSync(path.join(require('os').tmpdir(), 'jlpt-smoke-vocab-'));
 }
-require('../app/main.js');
+require('./test_host.js');
 
 const consoleErrors = [];
 const checks = [];

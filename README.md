@@ -1,6 +1,6 @@
 # JLPT 청해 연습
 
-JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습하는 오프라인 macOS 앱입니다. N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 해설을 보여 줍니다. 앱을 쓰는 동안에는 인터넷에 접속하지 않습니다. (앱 이름은 가칭이며 `app/config.js`의 `appName`에서 바꿉니다.)
+JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습하는 웹 앱입니다: **https://dongki12372-max.github.io/jlpt/** (GitHub Pages). N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 해설을 보여 줍니다. 폰·컴퓨터 어느 브라우저에서나 열리고, 동기화 코드로 기기 사이 진도를 맞춥니다. (앱 이름은 `app/config.js`의 `appName`. 예전 맥 앱(Electron dmg)은 0.4.0을 마지막으로 그만두었습니다.)
 
 ### 청해
 
@@ -26,22 +26,14 @@ JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습�
 - **실전 모의**: 레벨별 구성·시간(N5 15분 · N4 20분 · N3 25분 — 실제 시험은 독해와 합쳐 재므로 문법 몫만), 자유 이동·답 바꾸기·자동 제출. **오답노트**도 같은 방식.
 - 청해 스크립트의 문법 표현(〜ておく 등)을 누르면 사전 창에서 「문형 사전에서 보기」로 이어집니다.
 
-## 설치
+## 쓰는 법 · 기록
 
-1. `dist/` 폴더의 `JLPT Listening-<버전>-universal.dmg`를 엽니다.
-2. `JLPT Listening` 앱을 `Applications` 폴더로 끌어 놓습니다. (번들 파일 이름은 영문이고, Dock·메뉴·창 제목에는 「JLPT 청해 연습」으로 나옵니다. 번들 이름이 한글이면 Electron이 시작하지 못해서 이렇게 나눴습니다.)
-3. 처음 실행할 때 「확인되지 않은 개발자」 경고가 나오면, Finder에서 앱을 **오른쪽 클릭 → 열기 → 열기**를 누릅니다. (Apple 개발자 인증서 없이 자체 서명한 앱이라 한 번은 이렇게 열어야 합니다.)
-
-풀이 기록과 설정은 `~/Library/Application Support/JLPT 청해 연습/progress.json`에 저장됩니다. 앱의 설정 화면에서 초기화할 수 있습니다.
-
-## 웹 버전 (폰·다른 컴퓨터)
-
-같은 앱을 GitHub Pages에 올려 브라우저로도 씁니다: **https://dongki12372-max.github.io/jlpt/**
+주소: **https://dongki12372-max.github.io/jlpt/** (폰은 브라우저 메뉴의 「홈 화면에 추가」로 앱처럼 열 수 있습니다)
 
 - 폰(폴드 접은 화면 포함)과 펼친 화면·컴퓨터 화면에 맞춰 레이아웃이 바뀝니다.
-- **기기 간 동기화**: 설정 → 기기 간 동기화 → 「동기화 켜기」로 20자 코드를 만들고, 다른 기기(폰·다른 브라우저·맥 앱)에서 그 코드를 넣으면 기록이 자동으로 합쳐집니다 (계정 없음, Firebase Firestore 프로젝트 `jlptn3-ec3e8`, `app/config.js`의 `sync`, 코드는 `js/sync.js`). 같은 문항·카드는 나중에 바뀐 기록이 남고, 인터넷이 없을 때는 그 기기에 저장했다가 연결되면 맞춥니다. Firestore 규칙은 `sync/{20자 이상 코드}` 경로만 읽기·쓰기 허용.
-- 동기화를 켜지 않으면 풀이 기록은 브라우저마다 따로 저장됩니다(localStorage). 기기를 옮길 때는 설정 → 기록 → **내보내기**로 파일을 받고, 다른 기기에서 **가져오기**를 누릅니다. 데스크톱 앱과도 같은 파일로 주고받을 수 있습니다.
-- 웹 버전은 음성을 그때그때 인터넷으로 받습니다 (데스크톱 앱은 그대로 오프라인).
+- **기기 간 동기화**: 설정 → 기기 간 동기화 → 「동기화 켜기」로 20자 코드를 만들고, 다른 기기(폰·다른 브라우저)에서 그 코드를 넣으면 기록이 자동으로 합쳐집니다 (계정 없음, Firebase Firestore 프로젝트 `jlptn3-ec3e8`, `app/config.js`의 `sync`, 코드는 `js/sync.js`). 같은 문항·카드는 나중에 바뀐 기록이 남고, 인터넷이 없을 때는 그 기기에 저장했다가 연결되면 맞춥니다. Firestore 규칙은 `sync/{20자 이상 코드}` 경로만 읽기·쓰기 허용.
+- 동기화를 켜지 않으면 풀이 기록은 브라우저마다 따로 저장됩니다(localStorage). 설정 → 기록 → **내보내기**로 파일을 받고, 다른 기기에서 **가져오기**를 누르면 그 기기 기록과 합쳐집니다 (같은 문항은 나중 기록이 남음).
+- 음성은 그때그때 인터넷으로 받습니다.
 - 올리기: `npm run web:deploy` (`tools/deploy_web.sh` — 검사 → `.web-deploy/`에 화면·데이터·음성 모으기 → `gh-pages` 브랜치 push). main 브랜치에는 여전히 `audio/`가 들어가지 않습니다.
 - 확인: `npm run web:check` (리포를 http로 띄워 폰·폴드 화면 크기로 주요 화면을 눌러 보고, 가로 넘침·기록 저장·가져오기를 검사).
 
@@ -50,11 +42,12 @@ JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습�
 필요한 것: Node.js 22 이상, Python 3.13, ffmpeg (`brew install ffmpeg`).
 
 ```sh
-npm install                                   # Electron, electron-builder
+npm install                                   # Electron (자동 테스트용 브라우저)
 python3 -m venv .venv
 .venv/bin/pip install -r tools/requirements.txt   # edge-tts, pydub, jsonschema
-npm start                                     # 개발 모드로 실행
-npm run smoke                                 # 청해·문자어휘 스모크 테스트 (smoke:listening, smoke:vocab)
+npm start                                     # 로컬에서 열기 (http://127.0.0.1:8000/…, tools/serve.js)
+npm run smoke                                 # 스모크 테스트 (smoke:listening·vocab·grammar — tools/test_host.js가 웹 앱을 Electron 창으로 띄움)
+npm run web:check                             # 폰·폴드 화면 폭, 기록 저장·가져오기, 동기화(가짜 서버)
 ```
 
 `audio/`는 git에 올리지 않습니다. 처음 받았을 때는 아래 「음성 다시 만들기」로 생성합니다.
@@ -74,7 +67,7 @@ npm run smoke                                 # 청해·문자어휘 스모크 �
 2. 검사합니다: `.venv/bin/python tools/validate.py` — 실패하면 음성 생성으로 넘어가지 않습니다.
    - 따로 쓴 배치 파일은 `validate.py --batch <파일>`로 검사한 뒤 `tools/merge_batch.py <파일>`로 붙일 수 있습니다 (기존 서식 유지).
 3. 음성을 만듭니다: 아래 「음성 다시 만들기」.
-4. 앱에서 확인합니다: `npm run smoke` (앱을 띄워 전 레벨·유형을 자동으로 눌러 봄).
+4. 앱에서 확인합니다: `npm run smoke` (앱을 띄워 전 레벨·유형을 자동으로 눌러 봄), 올리기 `npm run web:deploy`.
 
 실전 모의 문항 수·답 고르는 시간 같은 숫자는 `app/config.js`에서만 바꿉니다. 앱 이름도 `app/config.js`의 `appName` 한 곳에서 정합니다.
 
@@ -109,19 +102,11 @@ npm run smoke                                 # 청해·문자어휘 스모크 �
 - 화자 음성(N·M·F·M2·F2)과 쉼 길이는 `tools/voices.json`. 값을 바꾸면 그 화자를 쓰는 문항만 다시 생성됩니다. 화자 후보 비교 샘플은 `tools/voice_compare.py`.
 - 지시문 문구는 `data/listening/intros.json`.
 
-## 빌드 (.dmg)
-
-```sh
-npm run dist        # dist/에 universal .dmg (Apple Silicon·Intel 공용)
-```
-
-빌드 전에 `validate.py`가 통과하고 `audio/`에 전 문항 음성이 있어야 합니다. 서명은 ad-hoc(자체) 서명입니다 (`build/afterPack.js`).
-
 ## 구조
 
 ```
-app/            Electron (main·preload·config·renderer)
-  renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(웹 버전 데이터·기록)
+app/            웹 앱 (config.js · renderer/)
+  renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(데이터·기록 읽기) sync.js(기기 간 동기화)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
   renderer/js/vocab/     문자·어휘: index.js srs.js deck.js quiz.js question-view.js practice.js exam.js
   renderer/js/grammar/   문법: index.js points.js(문형 사전·퀴즈) question-view.js practice.js exam.js
