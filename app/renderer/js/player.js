@@ -16,7 +16,6 @@ const Player = (() => {
   const emit = () => listeners.forEach((fn) => fn());
 
   // 구간 끝 확인은 타이머로 한다. requestAnimationFrame은 창이 가려지면 멈추므로 화면 갱신에만 쓴다.
-  // (창이 뒤에 있어도 타이머가 느려지지 않도록 main.js에서 backgroundThrottling을 끈다)
   function checkStop() {
     clearTimeout(stopTimer);
     if (stopAt === null || audio.paused) return;

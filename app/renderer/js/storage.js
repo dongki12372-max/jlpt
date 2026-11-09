@@ -1,5 +1,5 @@
 // ============================================================
-// 기록 저장 (영역 공통) — preload를 거쳐 메인 프로세스가 userData/progress.json에 쓴다.
+// 기록 저장 (영역 공통) — window.jlpt(web.js)가 이 브라우저의 localStorage에 쓴다.
 //   구조는 docs/DESIGN.md 2장:
 //   { version, settings: { common, {영역} }, sections: { {영역}: { items: {id: {...}}, exams: [...] } } }
 //   오답노트는 별도 목록이 아니라 items[id].review 플래그다.
@@ -26,12 +26,21 @@ const Storage = (() => {
     data = normalize(await window.jlpt.loadProgress());
   }
 
-  // 기록 파일 가져오기 (설정 화면): 지금 기록을 통째로 바꾼다. 형식이 아니면 예외
-  function replaceAll(raw) {
+  const checkFile = (raw) => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw) || typeof raw.sections !== 'object') {
       throw new Error('JLPT 연습 기록 파일이 아닙니다.');
     }
+  };
+  // 기록을 통째로 바꾼다 (테스트용). 형식이 아니면 예외
+  function replaceAll(raw) {
+    checkFile(raw);
     data = normalize(raw);
+    return save();
+  }
+  // 기록 파일 가져오기 (설정 화면): 지금 기록과 합친다 (merge — 같은 항목은 나중에 바뀐 쪽). 형식이 아니면 예외
+  function importMerge(raw) {
+    checkFile(raw);
+    data = merge(data, raw);
     return save();
   }
 
@@ -166,7 +175,7 @@ const Storage = (() => {
   }
 
   return {
-    load, save, onSave, merge, mergeIn, section, item, getSetting, setSetting, recordAnswer, removeFromReview, addExam, resetAll, replaceAll,
+    load, save, onSave, merge, mergeIn, section, item, getSetting, setSetting, recordAnswer, removeFromReview, addExam, resetAll, replaceAll, importMerge,
     get data() { return data; },
   };
 })();

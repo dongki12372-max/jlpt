@@ -7,7 +7,6 @@
 (function (root) {
   const config = {
     appName: 'JLPT 청해 연습',
-    appId: 'com.jlpt.listening',
 
     // 레벨 (전 영역 공통, 홈 화면 탭 순서)
     levels: {

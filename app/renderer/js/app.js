@@ -71,7 +71,7 @@ const App = (() => {
       <header class="app-header">
         <div>
           <h1>${Util.esc(cfg.appName)}</h1>
-          <p class="dim">JLPT 연습${window.jlpt.web ? '' : ' · 오프라인'}</p>
+          <p class="dim">JLPT 연습</p>
         </div>
         <button class="secondary" data-act="settings">설정</button>
       </header>
@@ -124,7 +124,7 @@ const App = (() => {
       <section class="card settings">
         <h2>기록</h2>
         <div class="row">
-          <span>기록을 파일로 저장하거나, 저장한 파일로 바꿔 넣습니다. ${window.jlpt.web ? '웹 버전은 기록이 이 브라우저에만 남으니 다른 기기로 옮길 때 씁니다.' : '웹 버전과 기록을 주고받을 때 씁니다.'}</span>
+          <span>기록을 파일로 저장하거나, 저장한 파일의 기록을 이 기기 기록과 합칩니다 (같은 문항은 나중 기록이 남음).</span>
           <span class="row-btns">
             <button class="secondary" data-act="export">내보내기</button>
             <button class="secondary" data-act="import">가져오기</button>
@@ -165,8 +165,8 @@ const App = (() => {
       if (!file) return;
       try {
         const raw = JSON.parse(await file.text());
-        if (!window.confirm('지금 기록을 이 파일의 기록으로 바꿀까요? 지금 기록은 사라집니다.')) return;
-        await Storage.replaceAll(raw);
+        if (!window.confirm('이 파일의 기록을 지금 기록과 합칠까요?')) return;
+        await Storage.importMerge(raw);
         showSettings();
         root().querySelector('[data-el="saved"]').textContent = '기록을 가져왔습니다.';
       } catch (e) {
