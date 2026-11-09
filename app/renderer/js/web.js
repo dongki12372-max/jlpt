@@ -31,6 +31,11 @@
       questions: await perLevel(`${DATA}/vocab/questions`),
       manifest: await getJson(`${AUDIO}/vocab/manifest.json`, {}),
     }),
+    grammar: async () => ({
+      points: await perLevel(`${DATA}/grammar/points`),
+      questions: await perLevel(`${DATA}/grammar/questions`),
+      manifest: await getJson(`${AUDIO}/grammar/manifest.json`, {}),
+    }),
   };
 
   // 브라우저가 저장 공간이 부족할 때 기록을 지우지 않도록 요청 (지원하는 브라우저만)

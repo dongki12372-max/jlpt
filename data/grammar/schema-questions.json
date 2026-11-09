@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "문법 문제 은행 (data/grammar/questions/{n5,n4,n3}.json)",
+  "description": "레벨별 파일에 문항 배열. 후리가나 {漢字|かんじ}. bunpou 빈칸 （　）, narabe 자리 ［＿］ 3개와 ［★］ 1개, bunshou 빈칸 ［1］~［n］. 세부 규칙은 tools/validate_grammar.py.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "level", "type"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^n[345]-(bunpou|narabe|bunshou)-[0-9]{3}$" },
+      "level": { "enum": ["N5", "N4", "N3"] },
+      "type": { "enum": ["bunpou", "narabe", "bunshou"] }
+    },
+    "oneOf": [
+      {
+        "additionalProperties": false,
+        "required": ["id", "level", "type", "stem", "stemFurigana", "options", "answer", "fullText", "fullFurigana", "fullKo", "targets", "explanation_ko", "optionNotes_ko", "tags"],
+        "properties": {
+          "id": true, "level": true,
+          "type": { "const": "bunpou" },
+          "stem": { "type": "string", "minLength": 1, "description": "빈칸 （　） 하나. 대화문이면 「A：…」「B：…」 줄을 \\n으로" },
+          "stemFurigana": { "type": "string", "minLength": 1 },
+          "options": { "$ref": "#/$defs/options" },
+          "answer": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "fullText": { "type": "string", "minLength": 1 },
+          "fullFurigana": { "type": "string", "minLength": 1 },
+          "fullKo": { "type": "string", "minLength": 1 },
+          "ttsText": { "type": "string", "minLength": 1 },
+          "targets": { "$ref": "#/$defs/targets" },
+          "explanation_ko": { "type": "string", "minLength": 1 },
+          "optionNotes_ko": { "$ref": "#/$defs/notes" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      {
+        "additionalProperties": false,
+        "required": ["id", "level", "type", "stem", "stemFurigana", "options", "order", "answer", "fullText", "fullFurigana", "fullKo", "targets", "explanation_ko", "tags"],
+        "properties": {
+          "id": true, "level": true,
+          "type": { "const": "narabe" },
+          "stem": { "type": "string", "minLength": 1, "description": "자리 ［＿］ 3개와 ［★］ 1개 (모두 4개, 앞뒤 글자와 띄어 쓰지 않음)" },
+          "stemFurigana": { "type": "string", "minLength": 1 },
+          "options": { "$ref": "#/$defs/options" },
+          "order": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "integer", "minimum": 1, "maximum": 4 }, "description": "자리 순서대로 놓이는 선택지 번호" },
+          "answer": { "type": "integer", "minimum": 1, "maximum": 4, "description": "★ 자리에 오는 선택지 번호 = order[★ 자리]" },
+          "fullText": { "type": "string", "minLength": 1 },
+          "fullFurigana": { "type": "string", "minLength": 1 },
+          "fullKo": { "type": "string", "minLength": 1 },
+          "ttsText": { "type": "string", "minLength": 1 },
+          "targets": { "$ref": "#/$defs/targets" },
+          "explanation_ko": { "type": "string", "minLength": 1 },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      {
+        "additionalProperties": false,
+        "required": ["id", "level", "type", "title", "passage", "passageFurigana", "items", "fullText", "fullFurigana", "fullKo", "tags"],
+        "properties": {
+          "id": true, "level": true,
+          "type": { "const": "bunshou" },
+          "title": { "type": "string", "minLength": 1, "description": "글 제목 (일본어, 예: 「わたしの　しゅみ」). 후리가나 표기 가능" },
+          "passage": { "type": "string", "minLength": 1, "description": "빈칸 ［1］~［n］이 순서대로 하나씩. 문단은 \\n" },
+          "passageFurigana": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "array", "minItems": 4, "maxItems": 5,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["options", "answer", "targets", "explanation_ko", "optionNotes_ko"],
+              "properties": {
+                "options": { "$ref": "#/$defs/options" },
+                "answer": { "type": "integer", "minimum": 1, "maximum": 4 },
+                "targets": { "$ref": "#/$defs/targets" },
+                "explanation_ko": { "type": "string", "minLength": 1 },
+                "optionNotes_ko": { "$ref": "#/$defs/notes" }
+              }
+            }
+          },
+          "fullText": { "type": "string", "minLength": 1, "description": "빈칸에 정답을 넣은 글 전체" },
+          "fullFurigana": { "type": "string", "minLength": 1 },
+          "fullKo": { "type": "string", "minLength": 1, "description": "완성한 글의 한국어 해석 (문단은 \\n)" },
+          "ttsText": { "type": "string", "minLength": 1 },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    ]
+  },
+  "$defs": {
+    "options": {
+      "type": "array", "minItems": 4, "maxItems": 4,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["text"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "furigana": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "targets": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "이 문항이 묻는 문형 key (points의 key)" },
+    "notes": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string" }, "description": "선택지별 오답 설명. 정답 자리는 빈 문자열" }
+  }
+}

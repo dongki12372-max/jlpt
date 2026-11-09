@@ -2,7 +2,8 @@
 // 문자·어휘 · 단어장 객관식 퀴즈: 형식·범위·문항 수 고르기 → 4지선다 → 결과
 //   형식: meaning 뜻 고르기(단어 → 뜻) / word 단어 고르기(뜻 → 단어) / reading 읽기 고르기(한자 단어 → 읽기) / mix 섞어서
 //   오답 선택지는 단어장 범위(레벨)의 같은 품사 단어에서 고르고, 뜻·읽기·표기가 정답과 겹치는 단어는 뺀다.
-//   틀린 단어는 단어장 오늘 복습으로 당긴다 (Vocab.pullWords). 맞혀도 카드 기록은 바꾸지 않는다.
+//   결과는 단어장 카드에 반영한다 (Vocab.quizAnswer: 뜻·단어 고르기 → 뜻 카드, 읽기 고르기 → 읽기 카드).
+//     맞힘: 오늘 복습할 카드는 복습 완료, 새 단어는 단어장에 추가(내일 복습) / 틀림: 「다시」 또는 새 카드 맨 앞
 //   단축키: 1~4 답, Enter 다음, R 단어 음성, ← → 이전·건너뛰기, Esc 단어장
 // ============================================================
 const Quiz = (() => {
@@ -61,7 +62,7 @@ const Quiz = (() => {
         <div class="segmented" role="radiogroup">
           ${cfg().quiz.counts.map((n) => `<button data-count="${n}" class="${n === count ? 'active' : ''}">${n}</button>`).join('')}
         </div>
-        <p class="dim small">틀린 단어는 단어장의 오늘 복습에 들어갑니다.</p>
+        <p class="dim small">결과는 단어장에 반영됩니다: 맞히면 오늘 복습할 카드는 복습 완료, 새 단어는 단어장에 추가(내일 복습). 틀리면 다시 학습합니다.</p>
         <div class="next-row"><button class="primary" data-act="start">시작 <span class="kbd">Enter</span></button></div>
       </section>
     `, { onKey: (e) => { if (e.key === 'Escape') Deck.showHome(level); else if (e.key === 'Enter') { e.preventDefault(); begin(); } } });
@@ -110,6 +111,32 @@ const Quiz = (() => {
   // 선택지에 보이는 글 (같은 글이 두 번 나오지 않게 비교용)
   const text = (x, format) => (format === 'meaning' ? x.meaning_ko : format === 'reading' ? x.reading : x.word);
 
+  // 단어장에 어떻게 반영됐는지
+  const CARD_NAME = { meaning: '뜻 카드', word: '뜻 카드', reading: '읽기 카드' };
+  const nextDue = (card) => (card && card.state === 'review' ? `다음 복습 ${new Date(card.due).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}` : '');
+  function effectText(r) {
+    const name = CARD_NAME[r.format] || '카드';
+    switch (r.effect) {
+      case 'reviewed': return `단어장: ${name} 오늘 복습 완료 · ${nextDue(r.card) || '학습 단계 진행'}`;
+      case 'introduced': return `단어장: 새 단어로 ${name}를 시작했습니다 · ${nextDue(r.card)}`;
+      case 'kept': return `단어장: ${name}는 아직 복습할 때가 아니라 그대로 둡니다 · ${nextDue(r.card) || '학습 단계'}`;
+      case 'again': return `단어장: ${name}를 「다시」로 처리했습니다 (곧 다시 나옵니다)`;
+      case 'pulled': return '단어장: 오늘 새 카드 맨 앞에 넣었습니다';
+      default: return '';
+    }
+  }
+  function deckSummary(results) {
+    const c = {};
+    for (const r of Object.values(results)) c[r.effect] = (c[r.effect] || 0) + 1;
+    const parts = [
+      c.reviewed && `복습 완료 ${c.reviewed}`,
+      c.introduced && `새로 추가 ${c.introduced}`,
+      (c.again || 0) + (c.pulled || 0) && `다시 학습 ${(c.again || 0) + (c.pulled || 0)}`,
+      c.kept && `그대로 ${c.kept}`,
+    ].filter(Boolean);
+    return parts.length ? `단어장 반영: ${parts.join(' · ')}` : '';
+  }
+
   // ---------- 풀기 ----------
   function run(level, words, format) {
     // 오답 선택지는 단어장 범위 전체에서 (범위가 좁으면 모든 레벨)
@@ -122,7 +149,7 @@ const Quiz = (() => {
       const item = session.list[session.idx];
       const { w } = item;
       const last = session.idx === session.list.length - 1;
-      const prev = session.results[w.key];
+      let prev = session.results[w.key];
       let answered = prev ? prev.n : null;
       const next = () => { if (last) showDone(); else { session.idx += 1; show(); } };
       const nav = {
@@ -175,6 +202,7 @@ const Quiz = (() => {
         const ok = answered === item.answer;
         $('[data-el="result"]').innerHTML = `
           <div class="verdict ${ok ? 'ok' : 'ng'}">${ok ? '정답입니다' : `오답입니다 — 정답은 ${item.answer}번`}</div>
+          ${prev && prev.effect ? `<p class="deck-effect dim small" data-el="deck-effect">${effectText(prev)}</p>` : ''}
           <div class="next-row"><button class="primary" data-act="next">${last ? '결과 보기' : '다음 문제'} → <span class="kbd">Enter</span></button></div>
           <section class="card word-detail">
             <div class="card-word" lang="ja">${Deck.rubyWord(w)}</div>
@@ -191,8 +219,9 @@ const Quiz = (() => {
         if (answered !== null || n < 1 || n > item.options.length) return;
         answered = n;
         const correct = n === item.answer;
-        session.results[w.key] = { n, correct };
-        if (!correct) Vocab.pullWords([w.key], Util.now());
+        const fx = Vocab.quizAnswer(w, item.format, correct, Util.now());
+        session.results[w.key] = { n, correct, format: item.format, effect: fx.effect, card: fx.card };
+        prev = session.results[w.key];
         const skip = $('[data-act="step-skip"]');
         if (skip) skip.textContent = '다음 ›';
         render();
@@ -221,7 +250,7 @@ const Quiz = (() => {
         </div>
         <section class="card done" data-el="quiz-done">
           ${Util.resultHead(asQ, results)}
-          ${wrong.length ? `<p class="dim">틀린 단어 ${wrong.length}개를 단어장 오늘 복습에 넣었습니다.</p>` : ''}
+          <p class="dim" data-el="deck-summary">${deckSummary(results)}</p>
           <ul class="result-list quiz-results">${rows}</ul>
           <div class="next-row">
             <button class="secondary" data-act="back">단어장으로</button>

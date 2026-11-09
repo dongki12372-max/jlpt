@@ -1,7 +1,7 @@
 // ============================================================
 // 문자·어휘 · SRS 복습 간격 계산 (SM-2 단순화). 화면과 저장은 deck.js, 숫자는 config.sections.vocab.srs.
 //
-//   카드 = { state: 'learning'|'review'|'relearning', due(ms), interval(일), ease, reps, lapses, step, introduced(날짜 키) }
+//   카드 = { state: 'learning'|'review'|'relearning', due(ms), interval(일), ease, reps, lapses, step, introduced(날짜 키), at(마지막으로 바뀐 시각 ms, 기기 간 동기화용) }
 //   새 카드는 기록이 없다 (cards에 키가 없음). 평가: 1 다시 · 2 어려움 · 3 알맞음 · 4 쉬움
 //
 //   - 학습 단계(learningStepsMinutes: 1분 → 10분): 알맞음이면 다음 단계, 마지막 단계를 넘기면 복습 카드(1일).
@@ -58,6 +58,7 @@ const Srs = (() => {
       state: 'learning', due: now, interval: 0, ease: c.startingEase, reps: 0, lapses: 0, step: 0, introduced: dayKey(now),
     };
     const steps = c.learningStepsMinutes;
+    card.at = now;
     card.reps += 1;
     if (rating === 1) card.lapses += 1;
 
@@ -112,5 +113,12 @@ const Srs = (() => {
 
   const isWeak = (card) => !!card && card.lapses >= cfg().weakLapses;
 
-  return { RATINGS, MIN, DAY, dayStart, dayKey, addDays, rate, preview, isWeak };
+  // 객관식 퀴즈에서 맞힌 새 단어: 학습 단계를 건너뛰고 바로 복습 카드 (graduatingIntervalDays일 뒤)
+  function introduce(now) {
+    const card = { state: 'learning', due: now, interval: 0, ease: cfg().startingEase, reps: 1, lapses: 0, step: 0, introduced: dayKey(now), at: now };
+    graduate(card, cfg().graduatingIntervalDays, now);
+    return card;
+  }
+
+  return { RATINGS, MIN, DAY, dayStart, dayKey, addDays, rate, preview, isWeak, introduce };
 })();

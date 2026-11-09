@@ -178,9 +178,12 @@ const QuestionView = (() => {
       }).join('');
       // 단어장에 있는 단어(문자·어휘 영역)는 표시하고 ▶ 단어 음성
       const inDeck = (v) => (typeof Vocab !== 'undefined' && v.kind !== 'grammar' ? Vocab.word(`${v.word}|${v.reading}`) : null);
+      const inGrammar = (v) => (typeof Grammar !== 'undefined' && v.kind === 'grammar' && Grammar.data ? Grammar.point(v.word) : null);
       const vocab = q.vocab.map((v) => {
         const w = inDeck(v);
-        const deck = w ? `<button class="btn-mini" data-word-audio="${Util.esc(w.key)}" title="단어 음성">▶</button> <span class="in-deck">단어장에 있음</span>` : '';
+        const gp = inGrammar(v);
+        const deck = w ? `<button class="btn-mini" data-word-audio="${Util.esc(w.key)}" title="단어 음성">▶</button> <span class="in-deck">단어장에 있음</span>`
+          : gp ? `<button class="link small" data-grammar-point="${Util.esc(gp.key)}">문형 사전</button>` : '';
         return `
         <tr><td lang="ja">${Util.esc(v.word)}</td><td lang="ja" class="dim">${Util.esc(v.reading)}</td><td>${Util.esc(v.meaning_ko)}</td><td class="num">${deck}</td></tr>`;
       }).join('');
@@ -208,6 +211,7 @@ const QuestionView = (() => {
 
       if (opts.onNext) $('[data-act="next"]').addEventListener('click', opts.onNext);
       $$('[data-word-audio]').forEach((b) => b.addEventListener('click', () => Clip.play(Vocab.wordAudio(Vocab.word(b.dataset.wordAudio)))));
+      $$('[data-grammar-point]').forEach((b) => b.addEventListener('click', () => GrammarPoints.showDetail(b.dataset.grammarPoint, () => show(q, { ...opts, answered }))));
       $('[data-el="furi"]').addEventListener('change', (e) => { prefs().furigana = e.target.checked; applyFurigana(); });
       const koBox = $('[data-el="ko"]');
       if (koBox) koBox.addEventListener('change', (e) => { prefs().showKo = e.target.checked; applyFurigana(); });

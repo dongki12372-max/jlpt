@@ -155,12 +155,51 @@ const Vocab = (() => {
       for (const id of cardIds(w)) {
         const c = s.cards[id];
         if (!c) fresh = true;
-        else if (c.due > now) c.due = now;
+        else if (c.due > now) { c.due = now; c.at = now; }
       }
       if (fresh) s.priorityNew = [key, ...s.priorityNew.filter((k) => k !== key)];
     }
     Storage.save();
   }
+
+  // 객관식 퀴즈 결과 → 단어장 (뜻·단어 고르기는 뜻 카드, 읽기 고르기는 읽기 카드)
+  //   맞힘: 지금 예정인 카드 → 「알맞음」으로 복습 처리 / 새 카드 → 바로 복습 카드로 시작 (하루 새 카드 수에는 넣지 않음)
+  //         / 아직 예정이 아닌 카드 → 그대로 (보기에서 고르기는 떠올리기보다 쉬워서 일찍 맞혀도 간격을 늘리지 않음)
+  //   틀림: 시작한 카드 → 「다시」 / 새 카드 → 새 카드 대기열 맨 앞 (pullWords)
+  //   단어별 퀴즈 기록은 store().quiz[key] = { n, right, last }
+  //   반환: { effect: 'reviewed'|'introduced'|'kept'|'again'|'pulled', card }
+  function quizAnswer(w, format, correct, now) {
+    const s = store();
+    s.quiz = s.quiz || {};
+    const qr = s.quiz[w.key] = s.quiz[w.key] || { n: 0, right: 0 };
+    qr.n += 1;
+    if (correct) qr.right += 1;
+    qr.last = !!correct;
+    const id = format === 'reading' && hasKanji(w.word) ? `${w.key}#reading` : `${w.key}#meaning`;
+    const c = s.cards[id];
+    let effect;
+    if (correct && !c) {
+      s.cards[id] = Srs.introduce(now);
+      if (cardIds(w).every((x) => s.cards[x])) s.priorityNew = s.priorityNew.filter((k) => k !== w.key);
+      effect = 'introduced';
+    } else if (correct && c.due <= now) {
+      answerCard(id, 3, now);
+      effect = 'reviewed';
+    } else if (correct) {
+      effect = 'kept';
+    } else if (c) {
+      answerCard(id, 1, now);
+      effect = 'again';
+    } else {
+      pullWords([w.key], now);
+      effect = 'pulled';
+    }
+    const today = Srs.dayKey(now);
+    if (!s.studyDays.includes(today)) s.studyDays.push(today);
+    Storage.save();
+    return { effect, card: s.cards[id] || null };
+  }
+  const quizRecord = (w) => (store().quiz || {})[w.key] || null;
 
   // 단어 상태: new 새 단어 / learning 학습 중 / review 복습 / weak 약한 단어
   function wordState(w) {
@@ -269,7 +308,7 @@ const Vocab = (() => {
 
   return {
     SECTION, cfg, prefs, LEVELS, words, word, scopeLevels, scopeWords, hasKanji, wordAudio, exampleAudio, audioUrl, hasAudio,
-    cardIds, splitCard, card, store, newCandidates, dueCards, nextCard, todayCounts, answerCard, pullWords,
+    cardIds, splitCard, card, store, newCandidates, dueCards, nextCard, todayCounts, answerCard, pullWords, quizAnswer, quizRecord,
     wordState, STATE_LABEL, streak, newRemaining,
     questions, levelTypes, record, reviewList, exams,
     get data() { return data; },

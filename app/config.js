@@ -106,10 +106,49 @@
           defaultCount: 20,
         },
       },
-      grammar: { label_ko: '문법',     label_ja: '文法',     enabled: false },
+      grammar: {
+        label_ko: '문법', label_ja: '文法', enabled: true,
+
+        // 문제 형식. instruction = 형식 첫머리 지시문 (공식 문구가 아니라 같은 취지로 새로 씀)
+        //   bunpou 문법 형식: 문장의 （　）에 들어갈 말 4지선다
+        //   narabe 문장 만들기: 조각 4개를 순서대로 놓았을 때 ★ 자리에 오는 조각 (화면에서는 눌러서 배열)
+        //   bunshou 글의 문법: 글 하나에 빈칸 ［1］~［n］, 빈칸마다 4지선다 (문항 하나 = 글 하나, 빈칸 수만큼 채점)
+        types: {
+          bunpou:  { label_ja: '文法形式の判断', label_ko: '문법 형식', instruction: 'つぎの　文の　（　）に　何を　入れますか。1・2・3・4から　いちばん　いい　ものを　一つ　えらんで　ください。' },
+          narabe:  { label_ja: '文の組み立て',   label_ko: '문장 만들기', instruction: '★に　入る　ものは　どれですか。ことばを　ならべて　文を　作って　ください。' },
+          bunshou: { label_ja: '文章の文法',     label_ko: '글의 문법', instruction: '文章を　読んで、［1］から［n］の　中に　入る　いちばん　いい　ものを　1・2・3・4から　えらんで　ください。' },
+        },
+        typeOrder: ['bunpou', 'narabe', 'bunshou'],
+        optionCount: 4,
+        // 레벨별 실전 구성 (bunshou는 빈칸 수 = 글 한 편의 빈칸). 실제 시험은 문법과 독해를 합쳐 N5 40분·N4 55분·N3 70분이라 문법 몫만 잡았다.
+        levels: {
+          N5: { examMinutes: 15, exam: { bunpou: 9, narabe: 4, bunshou: 4 } },
+          N4: { examMinutes: 20, exam: { bunpou: 13, narabe: 4, bunshou: 4 } },
+          N3: { examMinutes: 25, exam: { bunpou: 13, narabe: 5, bunshou: 5 } },
+        },
+        maxSameTargetPerType: 3,                   // 한 레벨에서 같은 문형이 같은 형식의 targets로 나오는 최대 횟수
+
+        // 문형 데이터
+        pointTargets: { N5: 70, N4: 90, N3: 110 },  // 레벨별 문형 수 목표
+        examplesPerPoint: 2,
+        exampleLength: { N5: 18, N4: 24, N3: 32 },  // 예문 길이 기준(글자, 안팎) — 1.6배를 넘으면 경고
+
+        // 문형 객관식 퀴즈
+        quiz: {
+          counts: [10, 20, 50],
+          defaultCount: 20,
+        },
+      },
     },
 
     reviewClearStreak: 2,                          // 오답노트에서 자동 제거되는 연속 정답 수 (전 영역 공통)
+
+    // 기기 간 동기화 (js/sync.js) — Firebase 프로젝트의 Firestore. 비어 있으면 설정 화면에 「서버 설정 전」으로 나온다.
+    //   apiKey·projectId는 웹 앱에 그대로 들어가는 공개 값이다 (접근 제어는 Firestore 규칙: 20자 코드 경로만 허용).
+    sync: {
+      projectId: '',
+      apiKey: '',
+    },
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = config;

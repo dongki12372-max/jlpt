@@ -1,7 +1,7 @@
 // ============================================================
 // 스크립트 단어 사전 (영역 공통): 후리가나 문장 + gloss 목록 → 누를 수 있는 단어, 누르면 작은 사전 창
 //   gloss 항목 = { t: 문장에 나온 모양, w: 사전형, r: 읽기, m: 한국어 뜻 } — 줄 안에서 나오는 순서대로
-//   단어장(문자·어휘)에 같은 key(w|r)가 있으면 ▶ 발음과 「단어장에서 보기」를 붙인다.
+//   단어장(문자·어휘)에 같은 key(w|r)가 있으면 ▶ 발음과 「단어장에서 보기」를, 문법 문형(key = w)이 있으면 「문형 사전에서 보기」를 붙인다.
 //   Esc 또는 창 밖을 누르면 닫힌다.
 // ============================================================
 const Dict = (() => {
@@ -60,6 +60,7 @@ const Dict = (() => {
   }
 
   const deckWord = (g) => (typeof Vocab !== 'undefined' ? Vocab.word(`${g.w}|${g.r}`) : null);
+  const grammarPoint = (g) => (typeof Grammar !== 'undefined' && Grammar.data ? Grammar.point(g.w) : null);
 
   function close() {
     if (pop) { pop.remove(); pop = null; }
@@ -70,6 +71,7 @@ const Dict = (() => {
     close();
     el.classList.add('active');
     const w = deckWord(g);
+    const gp = grammarPoint(g);
     const hasKanji = /[一-龯々〆ヵヶ]/.test(g.w);
     const head = hasKanji && !g.w.startsWith('〜') ? `<ruby>${Util.esc(g.w)}<rt>${Util.esc(g.r)}</rt></ruby>` : Util.esc(g.w);
     pop = document.createElement('div');
@@ -82,13 +84,21 @@ const Dict = (() => {
       <p class="dict-meaning">${Util.esc(g.m)}</p>
       ${g.t !== g.w ? `<p class="dict-form dim small" lang="ja">문장 속: ${Util.esc(g.t)}</p>` : ''}
       ${w ? `<p class="dict-deck small"><span class="in-deck">단어장에 있음 · ${w.level}</span>
-        <button class="link small" data-dict="deck">단어장에서 보기</button></p>` : ''}`;
+        <button class="link small" data-dict="deck">단어장에서 보기</button></p>` : ''}
+      ${gp ? `<p class="dict-deck small"><span class="in-deck">문형 · ${gp.level}</span>
+        <button class="link small" data-dict="grammar">문형 사전에서 보기</button></p>` : ''}`;
     document.body.appendChild(pop);
     const r = el.getBoundingClientRect();
     const pw = pop.offsetWidth;
     const left = Math.min(Math.max(8, r.left + window.scrollX), window.scrollX + document.documentElement.clientWidth - pw - 8);
     pop.style.left = `${left}px`;
     pop.style.top = `${r.bottom + window.scrollY + 6}px`;
+    if (gp) {
+      pop.querySelector('[data-dict="grammar"]').addEventListener('click', () => {
+        close();
+        GrammarPoints.showDetail(gp.key, back || App.showHome);
+      });
+    }
     if (w) {
       pop.querySelector('[data-dict="audio"]').addEventListener('click', () => Clip.play(Vocab.wordAudio(w)));
       pop.querySelector('[data-dict="deck"]').addEventListener('click', () => {
