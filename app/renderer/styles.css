@@ -160,6 +160,13 @@ button.opt:hover { border-color: var(--accent); }
 .opt .opt-text { flex: 1; }
 .opt.num-only { justify-content: flex-start; }
 .options.grid .opt { flex-direction: column-reverse; }
+/* 「모름」: 모르는 문항은 찍지 않고 오답으로 넘긴다 */
+.dontknow {
+  align-self: flex-end; grid-column: 1 / -1; justify-self: end;
+  background: transparent; color: var(--text-dim); border: 1px dashed var(--border); border-radius: var(--radius);
+  padding: 8px 18px; font-size: 15px;
+}
+.dontknow:hover { color: var(--text); border-color: var(--text-dim); }
 .opt.correct { border-color: var(--ok); background: var(--ok-bg); }
 .opt.correct .num { background: var(--ok); color: #0b2018; }
 .opt.wrong { border-color: var(--ng); background: var(--ng-bg); }

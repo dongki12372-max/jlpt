@@ -228,6 +228,66 @@ async function run(win) {
   await sleep(200);
   check('실전 결과 → 문항 해설', await exists('.verdict'));
 
+  // ---------- 「모름」: 찍지 않고 오답으로 기록하고 해설 (세 영역 문항 화면·퀴즈) ----------
+  const showWith = async (view, q) => {
+    await js(`window.__dk = null; ${view}.show(${q}, { crumb: 't', pos: '1 / 1', backLabel: '←', onBack: App.showHome,
+      onAnswer: (...a) => { window.__dk = a; }, nextLabel: '다음', onNext: App.showHome }); true`);
+    await sleep(150);
+  };
+  for (const [view, q] of [['QuestionView', "Listening.questions('N5')[0]"], ['VocabQuestionView', "Vocab.questions('N5')[0]"],
+    ['GrammarQuestionView', "Grammar.questions('N5').find((x) => x.type === 'bunpou')"]]) {
+    await showWith(view, q);
+    check(`모름 버튼: ${view}`, await exists('[data-act="dontknow"]'));
+    await click('[data-act="dontknow"]');
+    await sleep(150);
+    const a = await js('window.__dk');
+    check(`모름 → 오답으로 기록·정답 표시: ${view}`, a && a[0] === 0 && a[1] === false && (await text('.verdict')).startsWith('모름 — 정답은')
+      && !(await exists('[data-act="dontknow"]')) && !(await exists('.opt.wrong')), `${JSON.stringify(a)} ${await text('.verdict')}`);
+    if (view === 'GrammarQuestionView') await shot('dontknow');
+  }
+  {
+    await showWith('QuestionView', "Listening.questions('N5')[0]");
+    await key('0');
+    check('키 0 = 모름 (청해)', (await text('.verdict')).startsWith('모름'));
+  }
+  // narabe: 확인 옆 모름
+  await showWith('GrammarQuestionView', "Grammar.questions('N5').find((x) => x.type === 'narabe')");
+  await click('[data-el="check-row"] [data-act="dontknow"]');
+  await sleep(150);
+  check('narabe 모름 → 바른 순서', (await text('.verdict')).startsWith('모름') && await exists('.order-line'));
+  // bunshou: 빈칸마다 모름 (-1)
+  await showWith('GrammarQuestionView', "Grammar.questions('N5').find((x) => x.type === 'bunshou')");
+  const nItems = await js(`document.querySelectorAll('.gitem [data-act="dontknow"]').length`);
+  await click('[data-item-box="0"] [data-act="dontknow"]');
+  await sleep(150);
+  check('bunshou 빈칸마다 모름 → 그 빈칸만 채점', nItems >= 2 && (await js('JSON.stringify(window.__dk)')) === '[0,-1,false]'
+    && (await text('[data-item-box="0"] .item-explain p')).startsWith('모름') && await exists('[data-el="passage"] .gap.ng')
+    && (await js(`document.querySelectorAll('.gitem [data-act="dontknow"]').length`)) === nItems - 1, `${nItems}`);
+  // 실전 모의 해설에서 답 0은 「무응답」, 모름 버튼 없음
+  await js(`GrammarQuestionView.show(Grammar.questions('N5').find((x) => x.type === 'bunpou'), { crumb: 't', pos: '', backLabel: '←', onBack: App.showHome, answered: 0, blankLabel: '무응답' }); true`);
+  await sleep(150);
+  check('실전 해설: 무응답 표시·모름 버튼 없음', (await text('.verdict')).startsWith('무응답') && !(await exists('[data-act="dontknow"]')));
+  // 문형 퀴즈: 모름 → 약한 문형
+  await home();
+  await click('[data-mode="points"]');
+  await sleep(150);
+  await click('[data-act="quiz"]');
+  await sleep(150);
+  await click('[data-act="start"]');
+  await sleep(200);
+  const dkKey = await js(`document.querySelector('.quiz-q').dataset.key`);
+  await click('[data-act="dontknow"]');
+  await sleep(150);
+  check('문형 퀴즈 모름 → 약한 문형', (await text('.verdict')).startsWith('모름') && (await js(`Grammar.pointState(Grammar.point(${JSON.stringify(dkKey)}))`)) === 'weak');
+  // 단어 퀴즈: 모름 → 단어장 반영 (오답과 같게)
+  await js(`App.state.section = 'vocab'; Quiz.showSetup('N5'); true`);
+  await sleep(150);
+  await click('[data-act="start"]');
+  await sleep(200);
+  await click('[data-act="dontknow"]');
+  await sleep(150);
+  check('단어 퀴즈 모름 → 단어장 반영', (await text('.verdict')).startsWith('모름') && await exists('[data-el="deck-effect"]'), await text('[data-el="deck-effect"]'));
+
   // ---------- 폰 화면 폭 ----------
   win.setContentSize(384, 860);
   await sleep(300);

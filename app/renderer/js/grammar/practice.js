@@ -77,7 +77,7 @@ const GrammarPractice = (() => {
           ? (i, n, correct) => {
             partial[i] = n;
             Grammar.recordAnswer(q, i, correct);
-            if (partial.every((a) => a > 0)) {
+            if (partial.every((a) => a !== 0)) {   // -1 = 모름
               const right = partial.filter((a, k) => a === q.items[k].answer).length;
               session.results[q.id] = { n: partial.slice(), correct: right === q.items.length, right };
             }

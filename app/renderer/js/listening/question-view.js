@@ -144,6 +144,7 @@ const QuestionView = (() => {
       loadImages(box);
       box.querySelectorAll('button.opt').forEach((b) =>
         b.addEventListener('click', () => answer(Number(b.dataset.n))));
+      Util.dontKnow(box, answered, () => answer(0));
       box.querySelectorAll('[data-opt-seg]').forEach((b) => b.addEventListener('click', () => {
         const [s, e] = info.options[Number(b.dataset.optSeg)];
         Player.playSegment(s, e);
@@ -151,7 +152,7 @@ const QuestionView = (() => {
     }
 
     function answer(n) {
-      if (answered !== null || n < 1 || n > q.options.length) return;
+      if (answered !== null || n < 0 || n > q.options.length) return;
       answered = n;
       if (opts.onAnswer) opts.onAnswer(n, n === q.answer);
       const skip = $('[data-act="step-skip"]');
@@ -162,9 +163,7 @@ const QuestionView = (() => {
 
     // ---- 채점·해설 ----
     function renderResult() {
-      const verdict = answered === q.answer ? ['ok', '정답입니다']
-        : answered === 0 ? ['ng', `무응답 — 정답은 ${q.answer}번`]
-        : ['ng', `오답입니다 — 정답은 ${q.answer}번`];
+      const verdict = [answered === q.answer ? 'ok' : 'ng', Util.verdictText(answered, q.answer, opts.blankLabel)];
       const canReplay = q.type !== 'hatsuwa' && info && info.lines.length;
       const lines = q.script.split('\n').map((row, i) => {
         const cut = row.indexOf('：');
@@ -261,7 +260,7 @@ const QuestionView = (() => {
         Player.toggle();
       } else if (e.key === 'r' || e.key === 'R') {
         Player.restart();
-      } else if (/^[1-4]$/.test(e.key)) {
+      } else if (/^[0-4]$/.test(e.key)) {
         answer(Number(e.key));
       } else if (e.key === 'Enter' && answered !== null && opts.onNext) {
         e.preventDefault();
