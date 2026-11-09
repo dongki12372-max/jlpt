@@ -16,7 +16,7 @@ const Grammar = (() => {
     set furigana(v) { Storage.setSetting('common', 'furigana', !!v); },
     get showKo() { return Storage.getSetting(SECTION, 'showKo', true); },
     set showKo(v) { Storage.setSetting(SECTION, 'showKo', !!v); },
-    get order() { return Storage.getSetting(SECTION, 'order', 'seq'); },
+    get order() { return Storage.getSetting(SECTION, 'order', 'resume'); },
     set order(v) { Storage.setSetting(SECTION, 'order', v); },
     get unsolvedFirst() { return Storage.getSetting(SECTION, 'unsolvedFirst', true); },
     set unsolvedFirst(v) { Storage.setSetting(SECTION, 'unsolvedFirst', !!v); },
@@ -54,11 +54,14 @@ const Grammar = (() => {
   const recordIds = (q) => (q.type === 'bunshou' ? q.items.map((_, i) => `${q.id}#${i + 1}`) : [q.id]);
   const itemCount = (q) => (q.type === 'bunshou' ? q.items.length : 1);
   const targetsOf = (q, i = null) => (q.type !== 'bunshou' ? q.targets : i === null ? q.items.flatMap((it) => it.targets) : q.items[i].targets);
-  // 문항 기록 요약: 푼 적 있으면 { lastCorrect: 모든 빈칸을 마지막에 맞혔는지, review: 하나라도 오답노트 }
+  // 문항 기록 요약: 푼 적 있으면 { lastCorrect: 모든 빈칸을 마지막에 맞혔는지, review: 하나라도 오답노트, at: 마지막으로 푼 시각 }
   function record(q) {
     const rs = recordIds(q).map((id) => Storage.item(SECTION, id));
     if (!rs.some(Boolean)) return null;
-    return { lastCorrect: rs.every((r) => r && r.lastCorrect), review: rs.some((r) => r && r.review) };
+    return {
+      lastCorrect: rs.every((r) => r && r.lastCorrect), review: rs.some((r) => r && r.review),
+      at: Math.max(...rs.map((r) => (r ? r.at || Date.parse(r.lastAt || '') || 0 : 0))),
+    };
   }
   // 문항(또는 bunshou의 빈칸 i) 하나를 푼 결과. 그 문형 기록도 같이 남긴다.
   function recordAnswer(q, i, correct) {
