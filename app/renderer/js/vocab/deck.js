@@ -1,5 +1,5 @@
 // ============================================================
-// 문자·어휘 · 단어장 (SRS): 단어장 홈, 카드 학습, 단어 목록, 단어 상세
+// 문자·어휘 · 단어장 (SRS): 단어장 홈, 카드 학습, 단어 목록, 단어 상세 (객관식 퀴즈는 quiz.js)
 //   카드: 읽기 카드(표기 → 읽기, 앞면에 후리가나·음성 없음) / 뜻 카드(표기 + 음성 → 뜻, 앞면에서 음성 자동 재생)
 //   뒷면: 읽기, 뜻, 품사, 예문(후리가나 토글·해석, ▶ 예문 음성). 뒷면을 열면 단어 음성 자동 재생.
 //   단축키: Space 뒤집기, 1~4 평가(다시·어려움·알맞음·쉬움), R 음성 다시 듣기, Esc 뒤로
@@ -44,6 +44,7 @@ const Deck = (() => {
       </section>
       <section class="card">
         <div class="next-row">
+          <button class="secondary" data-act="quiz">객관식 퀴즈</button>
           <button class="secondary" data-act="list">단어 목록</button>
           <button class="secondary" data-act="weak">약한 단어 ${countWeak(level)}</button>
         </div>
@@ -52,6 +53,7 @@ const Deck = (() => {
 
     $('[data-act="home"]').addEventListener('click', App.showHome);
     $('[data-act="start"]').addEventListener('click', () => study(level));
+    $('[data-act="quiz"]').addEventListener('click', () => Quiz.showSetup(level));
     $('[data-act="list"]').addEventListener('click', () => showList(level, {}));
     $('[data-act="weak"]').addEventListener('click', () => showList(level, { state: 'weak', level: 'all' }));
     $$('[data-scope]:not(:disabled)').forEach((b) => b.addEventListener('click', () => { prefs().scope = b.dataset.scope; showHome(level); }));
@@ -283,5 +285,5 @@ const Deck = (() => {
     }
   }
 
-  return { showHome, study, showList, showDetail, exampleHtml, bindExample, rubyWord };
+  return { showHome, study, showList, showDetail, exampleHtml, bindExample, rubyWord, posLabel };
 })();
