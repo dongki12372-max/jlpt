@@ -1,6 +1,6 @@
 # 영역(section) 구조와 데이터 설계
 
-청해 이후에 문자·어휘(SRS 단어장 + JLPT 형식 문제)와 문법(빈칸, ★ 배열, 글의 문법)을 같은 앱에 추가할 수 있도록 정한 구조다. 지금 구현된 영역은 청해(`listening`)와 문자·어휘(`vocab`)다.
+청해 이후에 문자·어휘(SRS 단어장 + JLPT 형식 문제)와 문법(빈칸, ★ 배열, 글의 문법)을 같은 앱에 추가할 수 있도록 정한 구조다. 지금 구현된 영역은 청해(`listening`), 문자·어휘(`vocab`), 문법(`grammar`, 5장)이다.
 
 ## 1. 영역 구조
 
@@ -103,3 +103,40 @@
 - 같은 한자에 읽기가 여럿인 word는 한자로 써서 key가 겹치지 않게 한다 (要る(いる) ≠ いる(居る)).
 
 **현재 청해 vocab 현황 (샘플 26문항)**: 84개 = word 59 + expression 9 + grammar 16. 처음 83개에서 활용형을 사전형으로 정리했고(いりません → 要る, 足りない → 足りる, 空いている → 空く), 着てみる는 着る(word)와 〜てみる(grammar)로 나눴다.
+
+## 5. 문법 영역 (`grammar`)
+
+문형 사전(문형 목록·상세·예문 음성), 문형 객관식 퀴즈, JLPT 형식 문제 세 가지(연습·실전 모의·오답노트)로 이뤄진다. 숫자(실전 구성·시간·문형 목표 수)는 `config.sections.grammar`에만 둔다.
+
+### 5.1 문형 — `data/grammar/points/{n5,n4,n3}.json` (한 줄에 문형 하나, `schema-points.json`)
+
+```json
+{"id": "n5-g-001", "key": "〜てから", "pattern": "〜てから", "level": "N5", "meaning_ko": "~하고 나서",
+ "connection": "동사 て형 + から", "explanation_ko": "…2~3문장…",
+ "examples": [{"text": "…", "furigana": "…", "meaning_ko": "…"}, {…}], "similar": ["〜たあとで"], "tags": ["순서"]}
+```
+
+- **key = pattern**. 기록·참조(문항 targets, similar)의 키라서 한 번 정하면 바꾸지 않는다. 레벨 사이에도 겹치면 안 된다.
+- **pattern**: 〜로 시작 (〜てから, 〜なければならない). 접속 대상이 없는 조사·접속사 하나는 〜 없이 (でも, しかし). 변형은 ／로 (〜ないで／〜ずに). 같은 문형을 접속만 달리 쓰는 것(명사 + の + あとで)은 별도 문형으로 만들지 않고 `connection`에 함께 적는다.
+- **level**: 일반적인 JLPT 문형 목록 기준. 같은 문형을 낮은 레벨과 높은 레벨에 둘 다 두지 않는다.
+- **meaning_ko**: 짧게, 쉼표로 2개까지 (~하고 나서 / ~해도 된다, ~해도 좋다).
+- **connection**: 품사 이름은 한국어로 (동사 て형, い형용사 어간, な형용사·명사 + な 등).
+- **explanation_ko**: 2~3문장. 쓰임, 뉘앙스, 헷갈리는 문형과의 차이.
+- **examples**: 정확히 2개. 그 레벨에 맞는 쉬운 문장, 길이는 `exampleLength` 안팎. 모든 한자에 후리가나 `{漢字|かな}` (오쿠리가나는 밖에: `{食|た}べる`). 음성이 잘못 읽을 곳만 `ttsText`(가나, 읽기가 후리가나와 같아야 함).
+- **similar**: 헷갈리기 쉬운 문형의 key (있으면). 다른 레벨이어도 된다.
+
+### 5.2 문제 — `data/grammar/questions/{n5,n4,n3}.json` (`schema-questions.json`)
+
+공통: 일본어는 자연스럽고 정답이 **하나뿐**이어야 한다. 모든 한자에 후리가나. 선택지에 한자가 있으면 `furigana`. `fullKo`는 완성 문장(글)의 한국어 해석. `targets`는 그 문항이 묻는 문형 key (문항 레벨 이하의 문형만). `explanation_ko`는 2~3문장으로 왜 정답인지, `optionNotes_ko`는 선택지마다 왜 틀렸는지 (정답 자리는 빈 문자열). 실제 JLPT 문제를 옮기지 않고 새로 쓴다.
+
+- **bunpou 文法形式の判断**: `stem`에 빈칸 `（　）` 하나. `fullText` = 빈칸에 정답을 넣은 문장. 대화문은 `A：…\nB：…`. 오답 선택지는 같은 동사의 다른 활용, 비슷한 문형, 다른 조사처럼 그럴듯한 것으로.
+- **narabe 文の組み立て**: `stem`에 자리 `［＿］` 3개와 `［★］` 1개(띄어 쓰지 않음, 예: `きのうは［＿］［＿］［★］［＿］読みました。`). `options` = 조각 4개(뒤섞인 순서), `order` = 자리 순서대로 놓이는 선택지 번호, `answer` = ★ 자리의 선택지 번호. `fullText` = 순서대로 넣은 문장. 바른 순서가 하나뿐이어야 한다. `optionNotes_ko` 없음, `explanation_ko`에 어떻게 묶이는지와 순서.
+- **bunshou 文章の文法**: 짧은 글(일기·편지·안내·작문, N5 200자·N4 250자·N3 350자 안팎) 하나에 빈칸 `［1］`~`［n］`, n = 그 레벨 실전 수(N5·N4 4, N3 5). `items[i]` = 빈칸 i의 선택지·정답·targets·해설·오답 설명. 글 흐름(접속사, 지시어, 문말 표현, 시제·수수 표현)을 묻는다. `title`은 일본어 제목. `fullKo`는 문단(`\n`) 수를 passage와 맞춘다.
+
+### 5.3 기록
+
+`progress.json`의 `sections.grammar.items`: 문항 id(bunpou·narabe) 또는 `{bunshou id}#{빈칸 번호}`별 풀이 기록(청해·문자어휘와 같은 모양, 오답노트 = `review`). 문형 퀴즈 결과는 `items`의 `point:{key}`. `exams`는 실전 모의 (`byType` 키 = 형식).
+
+### 5.4 도구
+
+`tools/validate_grammar.py`(검사), `tools/merge_grammar.py points|questions <배치>`(검사 통과 시 합치기, 문형 id 자동), `tools/build_grammar_audio.py`(예문·문항 음성), 공통 `tools/grammar_common.py`.

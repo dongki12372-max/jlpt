@@ -32,9 +32,29 @@ const ok = (cond, msg, extra) => {
   if (cond) { passed++; console.log(`✓ ${msg}${extra !== undefined ? ` — ${JSON.stringify(extra)}` : ''}`); } else { failed++; console.log(`✗ ${msg}${extra !== undefined ? ` — ${JSON.stringify(extra)}` : ''}`); }
 };
 
+// 가짜 Firestore (동기화 테스트): /fs/v1/projects/…/documents/… 의 GET·PATCH만 흉내 낸다
+const fsDocs = new Map();
+function fakeFirestore(req, res) {
+  const key = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/fs\/v1\//, '');
+  if (req.method === 'GET') {
+    if (!fsDocs.has(key)) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{}'); return; }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ name: key, fields: fsDocs.get(key) }));
+    return;
+  }
+  let body = '';
+  req.on('data', (c) => { body += c; });
+  req.on('end', () => {
+    fsDocs.set(key, JSON.parse(body).fields);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ name: key, fields: fsDocs.get(key) }));
+  });
+}
+
 function serve() {
   return new Promise((resolve) => {
     const server = http.createServer((req, res) => {
+      if (req.url.startsWith('/fs/')) { fakeFirestore(req, res); return; }
       const p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
       if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end(); return; }
       res.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' });
@@ -187,11 +207,102 @@ async function runViewport(base, vp) {
     await screen('vocab-exam');
   }
 
+  // 문법: 문형 사전·상세·퀴즈, 형식별 문항(답한 뒤 해설까지), 실전 모의
+  await home();
+  await click('[data-section="grammar"]');
+  await waitFor('[data-mode="points"]');
+  await screen('home-grammar');
+  await click('[data-mode="points"]');
+  ok(await waitFor('.point-row'), `[${vp.name}] 문형 사전`);
+  await screen('grammar-points');
+  await click('.point-row');
+  await waitFor('.point-detail');
+  await screen('grammar-point-detail');
+  await js(`GrammarQuiz.run('N5', Grammar.points('N5').slice(0, 3), 'meaning'); true`);
+  await waitFor('.quiz-q');
+  await click('button.opt');
+  await waitFor('.point-detail');
+  await screen('grammar-quiz');
+  for (const t of ['bunpou', 'narabe', 'bunshou']) {
+    await js(`GrammarPractice.showSetup('N5')`);
+    await waitFor(`[data-type="${t}"]`);
+    await click(`[data-type="${t}"]`);
+    await waitFor('.gq');
+    await screen(`grammar-${t}`);
+    const id = await js(`document.querySelector('.gq').dataset.qid`);
+    if (t === 'bunpou') await js(`document.querySelector('button.opt[data-n="' + Grammar.question(${JSON.stringify(id)}).answer + '"]').click()`);
+    if (t === 'narabe') await js(`(async () => { for (const n of Grammar.question(${JSON.stringify(id)}).order) document.querySelector('[data-chip="' + n + '"]').click(); document.querySelector('[data-act="check"]').click(); })()`);
+    if (t === 'bunshou') await js(`Grammar.question(${JSON.stringify(id)}).items.forEach((it, i) => document.querySelector('[data-item-box="' + i + '"] button.opt[data-n="' + it.answer + '"]').click())`);
+    ok(await waitFor('.explain'), `[${vp.name}] 문법 ${t}: 해설`);
+    await screen(`grammar-${t}-explain`);
+  }
+  await js(`GrammarExam.showStart('N5')`);
+  await waitFor('[data-act="begin"]');
+  await click('[data-act="begin"]');
+  await waitFor('.qnav-btn');
+  await screen('grammar-exam');
+  await js(`window.confirm = () => true; document.querySelector('[data-act="submit"]').click()`);
+  ok(await waitFor('.gexam-result'), `[${vp.name}] 문법 실전 모의 결과`);
+  await screen('grammar-exam-result');
+
   // 설정
   await js('App.showSettings()');
   ok(await waitFor('[data-act="export"]') && await waitFor('[data-act="import"]'), `[${vp.name}] 설정: 기록 내보내기·가져오기`);
   await screen('settings');
   win.destroy();
+}
+
+// 기기 간 동기화: 저장소를 따로 쓰는 창 두 개 = 기기 두 대
+async function syncTests(base) {
+  const open = async (name) => {
+    const win = new BrowserWindow({ show: false, width: 400, height: 800, webPreferences: { partition: `sync-${name}-${Date.now()}` } });
+    await load(win.webContents, `${base}/app/renderer/index.html`);
+    await sleep(1500);
+    const js = (code) => win.webContents.executeJavaScript(code);
+    await js(`window.APP_CONFIG.sync = { projectId: 'test', endpoint: location.origin + '/fs/v1' }; true`);
+    return { win, js };
+  };
+  const A = await open('a');
+  const B = await open('b');
+  await A.js(`Storage.recordAnswer('listening', 'n5-kadai-001', false); Vocab.answerCard(Vocab.words('N5')[0].key + '#meaning', 3, Util.now()); true`);
+  const code = await A.js('Sync.create()');
+  ok(/^[A-Z2-9]{20}$/.test(code) && (await A.js('Sync.state.status')) === 'idle', '동기화: 기기 A에서 코드 만들기', code);
+  await B.js(`Storage.recordAnswer('listening', 'n5-kadai-002', true); true`);
+  let bad = await B.js(`Sync.join('ABCD').then(() => 'ok', (e) => e.message)`);
+  ok(bad.includes('20자'), '동기화: 코드 길이 검사', bad);
+  bad = await B.js(`Sync.join('${'A'.repeat(20)}').then(() => 'ok', (e) => e.message)`);
+  ok(bad.includes('서버에 없습니다'), '동기화: 없는 코드', bad);
+  await B.js(`Sync.join(${JSON.stringify(code.toLowerCase().replace(/(.{4})/g, '$1-'))})`);
+  ok(await B.js(`!!Storage.item('listening', 'n5-kadai-001') && !!Storage.item('listening', 'n5-kadai-002')`), '동기화: 기기 B가 연결하면 두 기기 기록이 합쳐짐');
+  ok(await B.js(`!!Vocab.card(Vocab.words('N5')[0].key + '#meaning')`), '동기화: 단어 카드도 넘어옴');
+  await A.js('Sync.syncNow()');
+  ok(await A.js(`!!Storage.item('listening', 'n5-kadai-002')`), '동기화: 기기 A도 B의 기록을 받음');
+  // 같은 문항을 두 기기에서: 나중에 푼 쪽이 남는다
+  await A.js(`Storage.recordAnswer('listening', 'n5-kadai-003', false); Sync.syncNow()`);
+  await sleep(20);
+  await B.js(`Sync.syncNow().then(() => { Storage.recordAnswer('listening', 'n5-kadai-003', true); return Sync.syncNow(); })`);
+  await A.js('Sync.syncNow()');
+  const it = await A.js(`Storage.item('listening', 'n5-kadai-003')`);
+  ok(it && it.lastCorrect === true && it.attempts === 2, '동기화: 같은 문항은 나중 기록이 남음', it && { attempts: it.attempts, lastCorrect: it.lastCorrect });
+  // 기록이 바뀌면 몇 초 뒤 자동으로 올라감
+  await B.js(`Storage.recordAnswer('listening', 'n5-kadai-004', true); true`);
+  await sleep(5500);
+  await A.js('Sync.syncNow()');
+  ok(await A.js(`!!Storage.item('listening', 'n5-kadai-004')`), '동기화: 바뀐 기록은 자동으로 올라감');
+  ok(!(await A.js(`JSON.stringify(Storage.data).includes('"sync":{"code"') && false`)), '동기화 설정은 서버에 올리지 않음');
+  const remoteHasCode = [...fsDocs.values()].some((f) => JSON.stringify(f).includes(code));
+  ok(!remoteHasCode, '동기화: 서버 기록에 코드가 들어가지 않음');
+  // 설정 화면
+  await A.js('App.showSettings()');
+  await sleep(200);
+  ok((await A.js(`document.querySelector('[data-el="sync-code-show"]').textContent`)).replace(/-/g, '') === code, '동기화: 설정 화면에 코드 표시');
+  // 인터넷이 끊기면
+  await A.js(`window.APP_CONFIG.sync.endpoint = 'http://127.0.0.1:1/fs/v1'; Sync.syncNow()`);
+  ok((await A.js('Sync.state.status')) === 'offline', '동기화: 인터넷이 없으면 「이 기기에만 저장」 상태', await A.js('Sync.state.status'));
+  await A.js(`Sync.disable(); true`);
+  ok(!(await A.js('Sync.enabled()')), '동기화 끄기');
+  A.win.destroy();
+  B.win.destroy();
 }
 
 async function storageTests(base) {
@@ -229,6 +340,7 @@ app.whenReady().then(async () => {
   try {
     for (const vp of VIEWPORTS) await runViewport(base, vp);
     await storageTests(base);
+    await syncTests(base);
   } catch (e) {
     failed++;
     console.log('✗ 예외:', e.stack || e);

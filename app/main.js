@@ -2,7 +2,7 @@
 // Electron 메인 프로세스
 //   - 렌더러(index.html) 로드, 앱 이름은 config.js의 appName
 //   - IPC: 영역(section)별 데이터 읽기, 그림(SVG) 읽기
-//   - 오프라인 앱: file:// 외 요청은 모두 차단
+//   - 오프라인 앱: file:// 외 요청은 모두 차단 (예외: 기기 간 동기화용 Firestore)
 // ============================================================
 const { app, BrowserWindow, ipcMain, session } = require('electron');
 const path = require('path');
@@ -42,7 +42,8 @@ function createWindow() {
 app.whenReady().then(() => {
   // 앱 실행 중에는 외부 네트워크 요청을 하지 않는다
   session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-    callback({ cancel: !/^(file|devtools|data|blob):/.test(details.url) });
+    // 기기 간 동기화(config.sync)를 켰을 때의 Firestore만 예외로 허용한다
+    callback({ cancel: !/^(file|devtools|data|blob):/.test(details.url) && !details.url.startsWith('https://firestore.googleapis.com/') });
   });
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
 
@@ -81,6 +82,17 @@ const SECTION_LOADERS = {
     }
     const manifest = readJson(path.join(AUDIO_DIR, 'vocab', 'manifest.json'), {});
     return { words, questions, manifest };
+  },
+  // 문법: 문형(레벨별) + 문제(레벨별) + 음성 manifest
+  grammar: () => {
+    const points = {};
+    const questions = {};
+    for (const key of LEVEL_KEYS) {
+      points[key] = readJson(path.join(DATA_DIR, 'grammar', 'points', `${key}.json`), []);
+      questions[key] = readJson(path.join(DATA_DIR, 'grammar', 'questions', `${key}.json`), []);
+    }
+    const manifest = readJson(path.join(AUDIO_DIR, 'grammar', 'manifest.json'), {});
+    return { points, questions, manifest };
   },
 };
 

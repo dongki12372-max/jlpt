@@ -1,6 +1,6 @@
 # JLPT 청해 연습
 
-JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라인 macOS 앱입니다. N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 해설을 보여 줍니다. 앱을 쓰는 동안에는 인터넷에 접속하지 않습니다. (앱 이름은 가칭이며 `app/config.js`의 `appName`에서 바꿉니다.)
+JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습하는 오프라인 macOS 앱입니다. N5·N4·N3 레벨별로 실제 시험의 문제 유형과 진행 방식을 재현하고, 풀면 바로 채점하고 해설을 보여 줍니다. 앱을 쓰는 동안에는 인터넷에 접속하지 않습니다. (앱 이름은 가칭이며 `app/config.js`의 `appName`에서 바꿉니다.)
 
 ### 청해
 
@@ -18,6 +18,13 @@ JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라
 - **실전 모의**: 레벨별 구성·시간(N5 20분 · N4 25분 · N3 30분), 문항 자유 이동·답 바꾸기, 시간이 끝나면 자동 제출. 실전 중에는 후리가나가 꺼집니다.
 - **단어장 연동**: 문제에서 틀린 단어는 단어장의 오늘 복습으로 들어갑니다. 청해 해설의 단어 목록에도 「단어장에 있음」과 ▶ 단어 음성이 붙습니다.
 - **문제 은행**: 레벨별 실전 모의 3회분 (N5 63 · N4 84 · N3 105문항).
+
+### 문법
+- **문형 사전**: N5·N4·N3 문형마다 뜻, 접속, 설명, 예문 2개(▶ 음성·해석), 비슷한 문형, 이 문형이 나오는 문제. 레벨·상태·검색 필터.
+- **문형 퀴즈 (객관식)**: 뜻 고르기·문형 고르기·섞어서, 범위(이 레벨·아래 레벨까지·약한 문형)와 문항 수. 틀린 문형은 「약한 문형」이 되고 연속 2번 맞히면 풀립니다.
+- **유형별 연습**: 文法形式の判断(빈칸)·文の組み立て(조각을 눌러 순서대로 놓고 ★ 자리로 채점)·文章の文法(글의 빈칸). 해설에 완성 문장(▶ 음성·해석), 선택지마다 틀린 이유, 이 문항의 문형.
+- **실전 모의**: 레벨별 구성·시간(N5 15분 · N4 20분 · N3 25분 — 실제 시험은 독해와 합쳐 재므로 문법 몫만), 자유 이동·답 바꾸기·자동 제출. **오답노트**도 같은 방식.
+- 청해 스크립트의 문법 표현(〜ておく 등)을 누르면 사전 창에서 「문형 사전에서 보기」로 이어집니다.
 
 ## 설치
 
@@ -79,6 +86,13 @@ npm run smoke                                 # 청해·문자어휘 스모크 �
 - 청해 문항의 vocab(word·expression)은 `tools/import_listening_vocab.py`로 단어 데이터와 출처를 맞춥니다.
 - 음성: `.venv/bin/python tools/build_vocab_audio.py` (단어·예문·문항 완성 문장, 바뀐 것만). 읽기가 틀릴 만한 곳은 `tools/check_vocab_tts.py --fix-words --fix-examples`가 찾아 `ttsText`를 넣습니다 (MFCC+DTW 비교, librosa 필요).
 
+## 문법 데이터
+
+- 문형: `data/grammar/points/{n5,n4,n3}.json` (한 줄에 문형 하나, `data/grammar/schema-points.json`). 기록은 `key`(= 문형 표기) 기준.
+- 문제: `data/grammar/questions/{n5,n4,n3}.json` (`data/grammar/schema-questions.json`). 빈칸 `（　）`, 문장 만들기 자리 `［＿］`·`［★］`, 글의 빈칸 `［1］`…
+- 작성 규칙: `docs/DESIGN.md` 5장. 검사 `.venv/bin/python tools/validate_grammar.py`, 배치 합치기 `tools/merge_grammar.py points|questions <배치>`.
+- 음성: `.venv/bin/python tools/build_grammar_audio.py` (예문·완성 문장, 바뀐 것만), 읽기 의심 확인 `tools/check_grammar_tts.py [--fix]`.
+
 ## 음성 다시 만들기
 
 음성은 개발할 때만 edge-tts(인터넷 필요)로 만들고, 앱에는 결과 mp3만 들어갑니다.
@@ -109,10 +123,13 @@ app/            Electron (main·preload·config·renderer)
   renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(웹 버전 데이터·기록)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
   renderer/js/vocab/     문자·어휘: index.js srs.js deck.js quiz.js question-view.js practice.js exam.js
+  renderer/js/grammar/   문법: index.js points.js(문형 사전·퀴즈) question-view.js practice.js exam.js
 data/listening/ 청해 문제 은행·스키마·지시문·그림
 data/vocab/     단어·문제·스키마
-audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/
+data/grammar/   문형·문제·스키마
+audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/, grammar/{examples,questions}/
 tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js web_check.js deploy_web.sh
+                validate_grammar.py merge_grammar.py build_grammar_audio.py check_grammar_tts.py grammar_common.py smoke_grammar.js
                 validate_vocab.py build_vocab_audio.py check_vocab_tts.py merge_words.py merge_questions.py
                 import_listening_vocab.py vocab_common.py smoke_vocab.js
 docs/           DESIGN.md (영역 구조·기록 형식·단어 데이터), OVERNIGHT_REPORT.md

@@ -79,7 +79,7 @@ async function run(win) {
   }
 
   const tabs = await js('Array.from(document.querySelectorAll("[data-section]")).map(b => b.dataset.section + (b.disabled ? ":off" : ":on"))');
-  check('영역 탭: 청해·문자어휘 활성, 문법 준비 중', tabs.join(',') === 'listening:on,vocab:on,grammar:off', tabs.join(','));
+  check('영역 탭: 청해·문자어휘·문법 활성', tabs.join(',') === 'listening:on,vocab:on,grammar:on', tabs.join(','));
   await click('[data-section="vocab"]');
   await sleep(200);
   check('문자·어휘 홈: 단어장 모드', await exists('.mode-card[data-mode="deck"]:not(:disabled)'));
@@ -92,6 +92,7 @@ async function run(win) {
   await questionTests(h);
   await examTests(h);
   await reviewTests(h);
+  await quizDeckTests(h);
   await listeningLinkTests(h);
 }
 
@@ -413,6 +414,60 @@ async function reviewTests({ js, click, exists, text, key }) {
     }
     check('오답노트: 연속 2번 정답 → 자동으로 빠짐', !(await js(`Storage.item('vocab', ${JSON.stringify(target.id)}).review`)));
   }
+}
+
+// ---------- 객관식 퀴즈 → 단어장 반영 ----------
+async function quizDeckTests({ js, click, exists, text }) {
+  // 아직 아무 카드도 시작하지 않은 N3 단어들로 경우마다 확인 (다른 테스트와 겹치지 않게 뒤쪽 단어)
+  const r = await js(`(() => {
+    const ws = Vocab.words('N3').filter((w) => Vocab.hasKanji(w.word) && Vocab.cardIds(w).every((id) => !Vocab.card(id))).slice(-5);
+    const now = Util.now();
+    const out = {};
+    // 1) 새 단어를 맞힘 → 뜻 카드가 바로 복습 카드(1일)
+    out.introduced = Vocab.quizAnswer(ws[0], 'meaning', true, now);
+    // 2) 그 카드를 내일 다시 맞힘 → 복습 완료, 간격이 늘어남
+    const tomorrow = Srs.addDays(Srs.dayStart(now), 1) + 3600000;
+    out.reviewed = Vocab.quizAnswer(ws[0], 'word', true, tomorrow);
+    // 3) 바로 또 맞힘 (아직 예정 아님) → 그대로
+    out.keptDue = Vocab.card(ws[0].key + '#meaning').due;
+    out.kept = Vocab.quizAnswer(ws[0], 'meaning', true, tomorrow);
+    // 4) 시작한 카드를 틀림 → 다시 (relearning, lapses 1)
+    out.again = Vocab.quizAnswer(ws[0], 'meaning', false, tomorrow);
+    // 5) 새 단어를 틀림 → 새 카드 대기열 맨 앞
+    out.pulled = Vocab.quizAnswer(ws[1], 'meaning', false, now);
+    out.front = Vocab.store().priorityNew[0] === ws[1].key;
+    // 6) 읽기 고르기는 읽기 카드에
+    out.reading = Vocab.quizAnswer(ws[2], 'reading', true, now);
+    out.readingCard = !!Vocab.card(ws[2].key + '#reading') && !Vocab.card(ws[2].key + '#meaning');
+    out.record = Vocab.quizRecord(ws[0]);
+    out.newDone = Vocab.store().daily.newDone;
+    out.key0 = ws[0].key;
+    return out;
+  })()`);
+  check('퀴즈: 새 단어 맞힘 → 단어장에 복습 카드로 추가 (1일)', r.introduced.effect === 'introduced' && r.introduced.card.state === 'review' && r.introduced.card.interval === 1);
+  check('퀴즈: 예정된 카드 맞힘 → 복습 완료, 간격 늘어남', r.reviewed.effect === 'reviewed' && r.reviewed.card.interval > 1, `${r.reviewed.card.interval}일`);
+  check('퀴즈: 아직 예정이 아닌 카드 맞힘 → 그대로', r.kept.effect === 'kept' && r.kept.card.due === r.keptDue);
+  check('퀴즈: 시작한 카드 틀림 → 다시 (학습 단계, 다시 +1)', r.again.effect === 'again' && r.again.card.state === 'relearning' && r.again.card.lapses === 1);
+  check('퀴즈: 새 단어 틀림 → 새 카드 맨 앞', r.pulled.effect === 'pulled' && r.front);
+  check('퀴즈: 읽기 고르기 → 읽기 카드', r.reading.effect === 'introduced' && r.readingCard);
+  check('퀴즈: 단어별 기록', r.record.n === 4 && r.record.right === 3 && r.record.last === false, JSON.stringify(r.record));
+  await js(`Deck.showDetail(${JSON.stringify(r.key0)}, () => App.showHome())`);
+  await sleep(200);
+  check('단어 상세에 퀴즈 기록', (await text('[data-el="quiz-record"]')).includes('4번 중 3번'));
+  // 화면: 답하면 단어장 반영 문구, 결과에 반영 요약
+  await js(`Quiz.run('N5', Vocab.words('N5').slice(0, 2), 'meaning'); true`);
+  await sleep(200);
+  await click('button.opt');
+  await sleep(150);
+  check('퀴즈 화면: 답하면 단어장 반영 문구', (await text('[data-el="deck-effect"]')).startsWith('단어장:'), await text('[data-el="deck-effect"]'));
+  await click('[data-act="next"]');
+  await sleep(150);
+  await click('button.opt');
+  await sleep(150);
+  await click('[data-act="next"]');
+  await sleep(200);
+  check('퀴즈 결과: 단어장 반영 요약', (await text('[data-el="deck-summary"]')).startsWith('단어장 반영'), await text('[data-el="deck-summary"]'));
+  await js('Clip.stop(); App.showHome()');
 }
 
 // ---------- 청해 해설의 단어장 연동 ----------

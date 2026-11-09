@@ -241,6 +241,7 @@ const Deck = (() => {
       const label = sec === 'listening' ? '청해' : '문자·어휘';
       return `<li><button class="link" data-src="${Util.esc(s)}">${label} ${Util.esc(id)}</button></li>`;
     }).join('');
+    const quiz = Vocab.quizRecord(w);
     const similar = (w.similar || []).map(Vocab.word).filter(Boolean)
       .map((s) => `<button class="link" data-similar="${Util.esc(s.key)}" lang="ja">${Util.esc(s.word)}</button> <span class="dim">${Util.esc(s.meaning_ko)}</span>`).join(' · ');
 
@@ -257,7 +258,7 @@ const Deck = (() => {
         ${similar ? `<p class="small">비슷한 말: ${similar}</p>` : ''}
       </section>
       <section class="card">
-        <h3>카드</h3><ul class="plain">${cards}</ul>
+        <h3>카드</h3><ul class="plain">${cards}${quiz ? `<li data-el="quiz-record">객관식 퀴즈: ${quiz.n}번 중 ${quiz.right}번 맞힘 (최근 ${quiz.last ? '맞힘' : '틀림'})</li>` : ''}</ul>
         ${sources ? `<h3>나온 문항</h3><ul class="plain">${sources}</ul>` : ''}
       </section>
     `, { onKey: (e) => { if (e.key === 'Escape') back(); else if (e.key === 'r' || e.key === 'R') Clip.play(Vocab.wordAudio(w)); } });

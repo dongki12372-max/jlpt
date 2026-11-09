@@ -14,7 +14,8 @@ PUSH=1
 
 .venv/bin/python tools/validate.py
 .venv/bin/python tools/validate_vocab.py
-for f in audio/listening/manifest.json audio/vocab/manifest.json; do
+.venv/bin/python tools/validate_grammar.py
+for f in audio/listening/manifest.json audio/vocab/manifest.json audio/grammar/manifest.json; do
   [ -f "$f" ] || { echo "$f 가 없습니다. 음성을 먼저 만드세요 (README 「음성 다시 만들기」)."; exit 1; }
 done
 

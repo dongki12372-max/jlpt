@@ -92,7 +92,7 @@ async function run(win) {
   check('홈 화면', await exists('.mode-card[data-mode="practice"]'), await text('h1'));
   check('창 제목 = config.appName', (await js('document.title')) === (await js('APP_CONFIG.appName')));
   const tabs = await js('Array.from(document.querySelectorAll("[data-section]")).map(b => b.dataset.section + (b.disabled ? ":off" : ":on"))');
-  check('영역 탭: 청해·문자어휘 활성, 문법 준비 중', tabs.join(',') === 'listening:on,vocab:on,grammar:off', tabs.join(','));
+  check('영역 탭: 청해·문자어휘·문법 활성', tabs.join(',') === 'listening:on,vocab:on,grammar:on', tabs.join(','));
   const blocked = await js(`fetch('https://example.com').then(() => 'reached').catch(() => 'blocked')`);
   check('외부 네트워크 요청 차단', blocked === 'blocked', blocked);
   await shot('01-home');
