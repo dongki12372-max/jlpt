@@ -347,6 +347,7 @@ const Exam = (() => {
       backLabel: '← 결과',
       onBack: showResult,
       answered: r.chosen,
+      blankLabel: '무응답',
       autoplay: false,
       nextLabel: last ? '결과로' : '다음 문항 해설',
       onNext: () => (last ? showResult() : review(i + 1)),

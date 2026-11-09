@@ -261,10 +261,11 @@ const GrammarQuiz = (() => {
           return `<${tag} class="opt ${cls}" data-n="${n}"><span class="num">${n}</span><span class="opt-text">${main}${extra}</span></${tag}>`;
         }).join('');
         $$('button.opt').forEach((b) => b.addEventListener('click', () => answer(Number(b.dataset.n))));
+        Util.dontKnow($('[data-el="options"]'), answered, () => answer(0));
         if (answered === null) return;
         const ok = answered === item.answer;
         $('[data-el="result"]').innerHTML = `
-          <div class="verdict ${ok ? 'ok' : 'ng'}">${ok ? '정답입니다' : `오답입니다 — 정답은 ${item.answer}번`}</div>
+          <div class="verdict ${ok ? 'ok' : 'ng'}">${Util.verdictText(answered, item.answer)}</div>
           <div class="next-row"><button class="primary" data-act="next">${last ? '결과 보기' : '다음 문제'} → <span class="kbd">Enter</span></button></div>
           <section class="card word-detail point-detail">
             <div class="point-pattern" lang="ja">${Util.esc(p.pattern)}</div>
@@ -278,7 +279,7 @@ const GrammarQuiz = (() => {
       }
 
       function answer(n) {
-        if (answered !== null || n < 1 || n > item.options.length) return;
+        if (answered !== null || n < 0 || n > item.options.length) return;
         answered = n;
         const correct = n === item.answer;
         session.results[p.key] = { n, correct };
@@ -289,7 +290,7 @@ const GrammarQuiz = (() => {
       }
 
       function onKey(e) {
-        if (/^[1-9]$/.test(e.key)) answer(Number(e.key));
+        if (/^[0-9]$/.test(e.key)) answer(Number(e.key));
         else if (e.key === 'Enter' && answered !== null) { e.preventDefault(); next(); }
         else if (Util.stepKey(e, nav)) e.preventDefault();
         else if (e.key === 'Escape') GrammarPoints.showList(level, {});

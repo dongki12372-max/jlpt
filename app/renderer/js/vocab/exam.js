@@ -248,7 +248,7 @@ const VocabExam = (() => {
   function showReviewAt(level, list, rec, i) {
     VocabQuestionView.show(list[i], {
       crumb: `${level} · 실전 모의 해설`, pos: `${i + 1} / ${list.length}`, backLabel: '← 결과',
-      onBack: () => showResult(level, list, rec), answered: rec.answers[i].chosen,
+      onBack: () => showResult(level, list, rec), answered: rec.answers[i].chosen, blankLabel: '무응답',
       nextLabel: i < list.length - 1 ? '다음 문항 해설' : '결과로',
       onNext: () => (i < list.length - 1 ? showReviewAt(level, list, rec, i + 1) : showResult(level, list, rec)),
     });

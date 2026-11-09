@@ -4,11 +4,13 @@
 //   narabe  조각 4개를 눌러 자리에 순서대로 놓기(놓인 조각을 누르면 빠짐) → 「확인」 → ★ 자리의 조각으로 채점
 //   bunshou 글의 빈칸 ［1］~［n］마다 4지선다, 빈칸마다 바로 채점 → 다 풀면 완성 글·해석
 //   해설: 완성 문장(후리가나·해석 토글) ▶ 문장 음성, 해설, 선택지별 오답 설명, 이 문항의 문형(문형 사전으로)
+//   「모름」(키 0): 찍지 않고 오답으로 기록하고 해설 (bunshou는 아직 안 푼 첫 빈칸)
 //   단축키: 1~4 답(bunshou는 아직 안 푼 첫 빈칸, narabe는 조각 놓기), Backspace 마지막 조각 빼기,
 //           Enter 확인·다음, ← → 이전·건너뛰기, Esc 뒤로
 //
 //   GrammarQuestionView.show(q, { crumb, pos, backLabel, onBack, answered, onAnswer, nextLabel, onNext, onPrev, onSkip })
-//     answered: undefined 풀기 전 / bunpou·narabe 1~4(0 무응답) / bunshou 빈칸별 배열 → 해설부터
+//     answered: undefined 풀기 전 / bunpou·narabe 1~4(0 모름·무응답) / bunshou 빈칸별 배열(-1 모름) → 해설부터
+//     blankLabel: 답 0을 부르는 말 (기본 '모름', 실전 모의 해설은 '무응답')
 //     onAnswer: bunpou·narabe (n, correct) / bunshou (i, n, correct) — 빈칸마다
 // ============================================================
 const GrammarQuestionView = (() => {
@@ -104,14 +106,14 @@ const GrammarQuestionView = (() => {
   }
 
   // ---------- bunshou: 빈칸 목록 ----------
-  //   answers[i] = 고른 번호(0 = 아직). graded면 고른 빈칸은 채점·해설
+  //   answers[i] = 고른 번호(0 = 아직, -1 = 모름). graded면 고른 빈칸은 채점·해설
   function itemsHtml(q, answers, { graded = false } = {}) {
     return q.items.map((it, i) => {
       const a = answers[i] || 0;
-      const done = graded && a > 0;
+      const done = graded && a !== 0;
       const notes = done ? `
         <div class="item-explain">
-          <p class="${a === it.answer ? 'ok-text' : 'ng-text'}">${a === it.answer ? '정답' : `오답 — 정답은 ${it.answer}번`}</p>
+          <p class="${a === it.answer ? 'ok-text' : 'ng-text'}">${a === it.answer ? '정답' : `${a < 0 ? '모름' : '오답'} — 정답은 ${it.answer}번`}</p>
           <p>${Util.esc(it.explanation_ko)}</p>
           <ol class="opt-notes">${it.options.map((o, j) => `<li class="${j + 1 === it.answer ? 'ok' : j + 1 === a ? 'ng' : ''}"><span class="num">${j + 1}</span>
             <span lang="ja">${optText(o)}</span><span class="note">${j + 1 === it.answer ? '정답' : Util.esc(it.optionNotes_ko[j])}</span></li>`).join('')}</ol>
@@ -129,7 +131,7 @@ const GrammarQuestionView = (() => {
       const i = Number(el.dataset.gap) - 1;
       const a = answers[i] || 0;
       const fill = el.querySelector('.gap-fill');
-      fill.innerHTML = a ? optText(q.items[i].options[a - 1]) : '';
+      fill.innerHTML = a > 0 ? optText(q.items[i].options[a - 1]) : a < 0 ? '?' : '';
       el.classList.toggle('filled', !!a);
       el.classList.toggle('ok', graded && a === q.items[i].answer);
       el.classList.toggle('ng', graded && !!a && a !== q.items[i].answer);
@@ -168,10 +170,10 @@ const GrammarQuestionView = (() => {
     <div class="full" lang="ja">${markup(q.fullFurigana)} <button class="btn-mini" data-act="full-audio" data-qid="${Util.esc(q.id)}" title="음성">▶</button></div>
     <p class="ko" lang="ko">${Util.esc(q.fullKo).replace(/\n/g, '<br>')}</p>`;
 
-  // 해설 패널 (bunpou·narabe). answered = 고른 번호(0 무응답), placed = narabe 배열(있으면)
-  function explainHtml(q, answered, placed = null) {
+  // 해설 패널 (bunpou·narabe). answered = 고른 번호(0 모름·무응답), placed = narabe 배열(있으면)
+  function explainHtml(q, answered, placed = null, blank = '모름') {
     const ok = answered === q.answer;
-    let verdict = ok ? '정답입니다' : answered === 0 ? `무응답 — 정답은 ${q.answer}번` : `오답입니다 — 정답은 ${q.answer}번`;
+    let verdict = Util.verdictText(answered, q.answer, blank);
     let body = '';
     if (q.type === 'narabe') {
       const orderOk = placed && placed.every((n, k) => n === q.order[k]);
@@ -200,7 +202,7 @@ const GrammarQuestionView = (() => {
     const isB = q.type === 'bunshou';
     let answered = opts.answered === undefined ? null : opts.answered;
     let answers = isB ? (Array.isArray(answered) ? answered.slice() : new Array(q.items.length).fill(0)) : null;
-    const allDone = () => answers.every((a) => a > 0);
+    const allDone = () => answers.every((a) => a !== 0);
     const placed = q.type === 'narabe' ? (answered === null ? [0, 0, 0, 0] : q.order.slice()) : null;
     let arr = null;
     const back = () => show(q, { ...opts, answered: isB ? answers : answered });
@@ -237,10 +239,11 @@ const GrammarQuestionView = (() => {
       const box = $('[data-el="options"]');
       box.innerHTML = optionsHtml(q.options, q.answer, answered);
       box.querySelectorAll('button.opt').forEach((b) => b.addEventListener('click', () => answerOne(Number(b.dataset.n))));
+      Util.dontKnow(box, answered, () => answerOne(0));
       if (answered !== null) renderResult();
     }
     function answerOne(n) {
-      if (answered !== null || n < 1 || n > 4) return;
+      if (answered !== null || n < 0 || n > 4) return;
       answered = n;
       if (opts.onAnswer) opts.onAnswer(n, n === q.answer);
       markNext();
@@ -248,7 +251,7 @@ const GrammarQuestionView = (() => {
       else { arr.setLocked(true, true); $('[data-el="check-row"]').innerHTML = ''; renderResult(); }
     }
     function renderResult() {
-      $('[data-el="result"]').innerHTML = explainHtml(q, answered, q.type === 'narabe' ? placed : null);
+      $('[data-el="result"]').innerHTML = explainHtml(q, answered, q.type === 'narabe' ? placed : null, opts.blankLabel);
       nextButton($('[data-el="next-row"]'));
       bindSwitches();
       bindPointCards(back);
@@ -261,6 +264,7 @@ const GrammarQuestionView = (() => {
       const full = !placed.includes(0);
       row.innerHTML = `<button class="primary" data-act="check" ${full ? '' : 'disabled'}>확인 <span class="kbd">Enter</span></button>`;
       row.querySelector('[data-act="check"]').addEventListener('click', check);
+      Util.dontKnow(row, answered, () => answerOne(0));
     }
     function check() {
       if (answered !== null || placed.includes(0)) return;
@@ -272,6 +276,7 @@ const GrammarQuestionView = (() => {
       $('[data-el="items"]').innerHTML = itemsHtml(q, answers, { graded: true });
       fillGaps(q, answers, true);
       $$('[data-el="items"] button.opt').forEach((b) => b.addEventListener('click', () => answerItem(Number(b.dataset.item), Number(b.dataset.n))));
+      answers.forEach((a, i) => { if (!a) Util.dontKnow($(`[data-item-box="${i}"] .options`), null, () => answerItem(i, -1)); });
       if (allDone()) {
         $('[data-el="result"]').innerHTML = `
           <div class="verdict ${answers.every((a, i) => a === q.items[i].answer) ? 'ok' : 'ng'}">${answers.filter((a, i) => a === q.items[i].answer).length} / ${q.items.length} 정답</div>
@@ -283,7 +288,7 @@ const GrammarQuestionView = (() => {
       }
     }
     function answerItem(i, n) {
-      if (answers[i] || n < 1 || n > 4) return;
+      if (answers[i] || n < -1 || n > 4) return;
       answers[i] = n;
       if (opts.onAnswer) opts.onAnswer(i, n, n === q.items[i].answer);
       if (allDone()) markNext();
@@ -298,6 +303,9 @@ const GrammarQuestionView = (() => {
         if (q.type === 'bunpou') answerOne(n);
         else if (q.type === 'narabe') { if (answered === null) arr.place(n); }
         else { const i = answers.indexOf(0); if (i >= 0) answerItem(i, n); }
+      } else if (e.key === '0') {
+        if (q.type !== 'bunshou') answerOne(0);
+        else { const i = answers.indexOf(0); if (i >= 0) answerItem(i, -1); }
       } else if (e.key === 'Backspace' && q.type === 'narabe' && answered === null) {
         e.preventDefault();
         arr.removeLast();

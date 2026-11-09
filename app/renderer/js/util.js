@@ -64,5 +64,15 @@ const Util = (() => {
     return `<h2>${correct} / ${done.length} 정답</h2>${skipped ? `<p class="dim">건너뛴 문항 ${skipped}개 (기록에 남지 않음)</p>` : ''}`;
   };
 
-  return { esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead };
+  // 「모름」 버튼: 모르는 문항을 찍지 않고 넘긴다 → 답 0(오답)으로 기록하고 정답·해설을 보여 준다. 키 0
+  const dontKnow = (box, answered, onPick) => {
+    if (answered !== null || !box) return;
+    box.insertAdjacentHTML('beforeend', '<button class="dontknow" data-act="dontknow" title="모르면 찍지 말고 (0)">모름 <span class="kbd">0</span></button>');
+    box.querySelector('[data-act="dontknow"]').addEventListener('click', onPick);
+  };
+  // 채점 문구. 답 0 = 모름 (실전 모의 해설에서는 blank = '무응답')
+  const verdictText = (answered, answer, blank = '모름') => (answered === answer ? '정답입니다'
+    : answered === 0 ? `${blank} — 정답은 ${answer}번` : `오답입니다 — 정답은 ${answer}번`);
+
+  return { esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText };
 })();

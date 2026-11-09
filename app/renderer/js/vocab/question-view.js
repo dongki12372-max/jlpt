@@ -42,10 +42,8 @@ const VocabQuestionView = (() => {
   }
 
   // 해설 패널 (연습·결과 공용)
-  function explainHtml(q, answered) {
-    const verdict = answered === q.answer ? ['ok', '정답입니다']
-      : answered === 0 ? ['ng', `무응답 — 정답은 ${q.answer}번`]
-      : ['ng', `오답입니다 — 정답은 ${q.answer}번`];
+  function explainHtml(q, answered, blank) {
+    const verdict = [answered === q.answer ? 'ok' : 'ng', Util.verdictText(answered, q.answer, blank)];
     const notes = q.options.map((o, i) => {
       const n = i + 1;
       const note = q.optionNotes_ko[i];
@@ -112,10 +110,11 @@ const VocabQuestionView = (() => {
       const box = $('[data-el="options"]');
       box.innerHTML = optionsHtml(q, answered);
       box.querySelectorAll('button.opt').forEach((b) => b.addEventListener('click', () => answer(Number(b.dataset.n))));
+      Util.dontKnow(box, answered, () => answer(0));
     }
 
     function answer(n) {
-      if (answered !== null || n < 1 || n > 4) return;
+      if (answered !== null || n < 0 || n > 4) return;
       answered = n;
       if (opts.onAnswer) opts.onAnswer(n, n === q.answer);
       const skip = $('[data-act="step-skip"]');
@@ -125,7 +124,7 @@ const VocabQuestionView = (() => {
     }
 
     function renderResult() {
-      $('[data-el="result"]').innerHTML = explainHtml(q, answered);
+      $('[data-el="result"]').innerHTML = explainHtml(q, answered, opts.blankLabel);
       if (opts.onNext) {
         $('[data-el="next-row"]').innerHTML = `<button class="primary" data-act="next">${Util.esc(opts.nextLabel)} → <span class="kbd">Enter</span></button>`;
         $('[data-act="next"]').addEventListener('click', opts.onNext);
@@ -134,7 +133,7 @@ const VocabQuestionView = (() => {
     }
 
     function onKey(e) {
-      if (/^[1-4]$/.test(e.key)) answer(Number(e.key));
+      if (/^[0-4]$/.test(e.key)) answer(Number(e.key));
       else if (e.key === 'Enter' && answered !== null && opts.onNext) { e.preventDefault(); opts.onNext(); }
       else if (e.key === 'f' || e.key === 'F') {
         prefs().furigana = !prefs().furigana;
