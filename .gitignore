@@ -22,3 +22,6 @@ smoke-out/
 
 # 웹 버전 배포 작업 폴더 (gh-pages 브랜치, tools/deploy_web.sh)
 .web-deploy/
+
+# 사용자가 넣어 둔 스크린샷
+스크린샷*.png

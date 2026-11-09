@@ -146,8 +146,8 @@
     // 기기 간 동기화 (js/sync.js) — Firebase 프로젝트의 Firestore. 비어 있으면 설정 화면에 「서버 설정 전」으로 나온다.
     //   apiKey·projectId는 웹 앱에 그대로 들어가는 공개 값이다 (접근 제어는 Firestore 규칙: 20자 코드 경로만 허용).
     sync: {
-      projectId: '',
-      apiKey: '',
+      projectId: 'jlptn3-ec3e8',
+      apiKey: '',                                  // Firestore REST는 규칙만으로 접근을 정하므로 키 없이도 된다
     },
   };
 

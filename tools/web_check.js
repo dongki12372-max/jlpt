@@ -259,7 +259,8 @@ async function syncTests(base) {
     await load(win.webContents, `${base}/app/renderer/index.html`);
     await sleep(1500);
     const js = (code) => win.webContents.executeJavaScript(code);
-    await js(`window.APP_CONFIG.sync = { projectId: 'test', endpoint: location.origin + '/fs/v1' }; true`);
+    // SYNC_REAL=1이면 config.js의 실제 Firebase 프로젝트로, 아니면 가짜 Firestore로
+    if (!process.env.SYNC_REAL) await js(`window.APP_CONFIG.sync = { projectId: 'test', endpoint: location.origin + '/fs/v1' }; true`);
     return { win, js };
   };
   const A = await open('a');
@@ -290,8 +291,10 @@ async function syncTests(base) {
   await A.js('Sync.syncNow()');
   ok(await A.js(`!!Storage.item('listening', 'n5-kadai-004')`), '동기화: 바뀐 기록은 자동으로 올라감');
   ok(!(await A.js(`JSON.stringify(Storage.data).includes('"sync":{"code"') && false`)), '동기화 설정은 서버에 올리지 않음');
-  const remoteHasCode = [...fsDocs.values()].some((f) => JSON.stringify(f).includes(code));
-  ok(!remoteHasCode, '동기화: 서버 기록에 코드가 들어가지 않음');
+  if (!process.env.SYNC_REAL) {
+    const remoteHasCode = [...fsDocs.values()].some((f) => JSON.stringify(f).includes(code));
+    ok(!remoteHasCode, '동기화: 서버 기록에 코드가 들어가지 않음');
+  } else console.log(`(실제 서버 테스트 코드: ${code})`);
   // 설정 화면
   await A.js('App.showSettings()');
   await sleep(200);
