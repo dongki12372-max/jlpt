@@ -136,6 +136,28 @@ async function runViewport(base, vp) {
     await screen('deck-card');
   }
   await js('Clip.stop()');
+  // 객관식 퀴즈: 형식마다 시작 → 답 → 해설 → 나머지 건너뛰고 결과
+  for (const fmt of ['meaning', 'word', 'reading', 'mix']) {
+    await home();
+    await click('[data-mode="deck"]');
+    await waitFor('[data-act="quiz"]');
+    await click('[data-act="quiz"]');
+    await waitFor('[data-format]');
+    await click(`[data-format="${fmt}"]`);
+    await click('[data-count="10"]');
+    if (fmt === 'meaning') await screen('quiz-setup');
+    await click('[data-act="start"]');
+    ok(await waitFor('.quiz-q') && await js(`document.querySelectorAll('button.opt').length`) === 4, `[${vp.name}] 퀴즈(${fmt}): 4지선다`);
+    if (fmt === 'meaning' || fmt === 'reading') await screen(`quiz-${fmt}`);
+    await click('button.opt');
+    ok(await waitFor('.word-detail') && await js(`!!document.querySelector('.opt.correct')`), `[${vp.name}] 퀴즈(${fmt}): 채점·단어 해설`);
+    if (fmt === 'meaning') await screen('quiz-answered');
+    for (let i = 0; i < 15 && !(await js(`!!document.querySelector('[data-el="quiz-done"]')`)); i++) { await click('[data-act="step-skip"]'); await sleep(40); }
+    const head = await js(`document.querySelector('[data-el="quiz-done"] h2').textContent`);
+    ok(/\/ 1 정답/.test(head), `[${vp.name}] 퀴즈(${fmt}): 결과`, head);
+    if (fmt === 'mix') await screen('quiz-done');
+    await js('Clip.stop()');
+  }
   await home();
   await click('[data-mode="deck"]');
   await waitFor('[data-act="list"]');

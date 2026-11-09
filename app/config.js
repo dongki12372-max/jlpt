@@ -100,6 +100,11 @@
           dayStartHour: 4,                 // 하루의 경계 (새벽 4시)
           learnAheadMinutes: 20,           // 남은 카드가 학습 단계뿐이면 이 시간 안에 올 카드를 앞당겨 보여 준다
         },
+        // 단어장 객관식 퀴즈 (선택지 수는 위 optionCount)
+        quiz: {
+          counts: [10, 20, 50],            // 한 번에 풀 문항 수 선택지
+          defaultCount: 20,
+        },
       },
       grammar: { label_ko: '문법',     label_ja: '文法',     enabled: false },
     },

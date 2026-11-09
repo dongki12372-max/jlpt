@@ -13,6 +13,7 @@ JLPT 청해(聴解)와 문자·어휘(文字・語彙)를 연습하는 오프라
 
 ### 문자·어휘
 - **단어장 (SRS)**: N5 752 · N4 660 · N3 1,783단어. 단어마다 읽기 카드·뜻 카드, 「다시/어려움/알맞음/쉬움」 평가로 다음 복습일이 정해집니다 (SM-2 단순화, 하루 새 카드 수는 설정). 모든 단어와 예문에 음성.
+- **객관식 퀴즈 (단어장)**: 뜻 고르기·단어 고르기·읽기 고르기·섞어서, 범위(전체·학습한 단어·약한 단어)와 문항 수(10·20·50). 오답 선택지는 같은 범위·같은 품사 단어에서 뜻·읽기가 겹치지 않게 고르고, 틀린 단어는 단어장 오늘 복습으로 들어갑니다.
 - **유형별 연습**: 漢字読み·表記·文脈規定·言い換え類義·用法(N4·N3). 답하면 완성 문장(▶ 음성), 해설, 오답 선택지마다 왜 틀렸는지, 이 문항의 단어 카드.
 - **실전 모의**: 레벨별 구성·시간(N5 20분 · N4 25분 · N3 30분), 문항 자유 이동·답 바꾸기, 시간이 끝나면 자동 제출. 실전 중에는 후리가나가 꺼집니다.
 - **단어장 연동**: 문제에서 틀린 단어는 단어장의 오늘 복습으로 들어갑니다. 청해 해설의 단어 목록에도 「단어장에 있음」과 ▶ 단어 음성이 붙습니다.
@@ -107,7 +108,7 @@ npm run dist        # dist/에 universal .dmg (Apple Silicon·Intel 공용)
 app/            Electron (main·preload·config·renderer)
   renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(웹 버전 데이터·기록)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
-  renderer/js/vocab/     문자·어휘: index.js srs.js deck.js question-view.js practice.js exam.js
+  renderer/js/vocab/     문자·어휘: index.js srs.js deck.js quiz.js question-view.js practice.js exam.js
 data/listening/ 청해 문제 은행·스키마·지시문·그림
 data/vocab/     단어·문제·스키마
 audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/
