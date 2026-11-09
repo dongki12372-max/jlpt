@@ -20,7 +20,7 @@ const GrammarPractice = (() => {
         <button class="type-card" data-type="${t}" ${ofType.length ? '' : 'disabled'}>
           <span class="type-ja" lang="ja">${tc.label_ja}</span>
           <span class="type-ko">${tc.label_ko}</span>
-          <span class="dim">${ofType.length}${t === 'bunshou' ? '편' : '문항'} · 푼 ${solved}</span>
+          <span class="dim">${ofType.length}${t === 'bunshou' ? '편' : '문항'} · 푼 ${solved}${Util.resumeNote(ofType, prefs().order, Grammar.record)}</span>
         </button>`;
     }).join('');
 
@@ -30,10 +30,7 @@ const GrammarPractice = (() => {
         <span class="crumb">${level} · 문법 · 유형별 연습</span>
       </div>
       <h2>형식 선택</h2>
-      <div class="segmented" role="radiogroup">
-        <button data-order="seq" class="${prefs().order === 'seq' ? 'active' : ''}">순서대로</button>
-        <button data-order="random" class="${prefs().order === 'random' ? 'active' : ''}">무작위</button>
-      </div>
+      ${Util.orderButtons(prefs().order)}
       <label class="switch inline"><input type="checkbox" data-el="unsolved" ${prefs().unsolvedFirst ? 'checked' : ''}> 안 푼 문항 우선</label>
       <div class="type-grid">${cards}</div>
     `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
@@ -41,12 +38,11 @@ const GrammarPractice = (() => {
     $('[data-act="home"]').addEventListener('click', App.showHome);
     $$('[data-order]').forEach((b) => b.addEventListener('click', () => {
       prefs().order = b.dataset.order;
-      $$('[data-order]').forEach((x) => x.classList.toggle('active', x === b));
+      showSetup(level);
     }));
     $('[data-el="unsolved"]').addEventListener('change', (e) => { prefs().unsolvedFirst = e.target.checked; });
     $$('[data-type]').forEach((b) => b.addEventListener('click', () => {
-      let list = Grammar.questions(level).filter((q) => q.type === b.dataset.type);
-      if (prefs().order === 'random') list = Util.shuffle(list);
+      let list = Util.orderList(Grammar.questions(level).filter((q) => q.type === b.dataset.type), prefs().order, Grammar.record);
       if (prefs().unsolvedFirst) list = [...list.filter((q) => !Grammar.record(q)), ...list.filter((q) => Grammar.record(q))];
       run({ level, list, title: cfg().types[b.dataset.type].label_ko, back: () => showSetup(level), again: () => b.click() });
     }));

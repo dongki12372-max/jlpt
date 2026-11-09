@@ -21,7 +21,7 @@ const Practice = (() => {
         <button class="type-card" data-type="${t}" ${n ? '' : 'disabled'}>
           <span class="type-ja" lang="ja">${tc.label_ja}</span>
           <span class="type-ko">${tc.label_ko}</span>
-          <span class="dim">${n}문항 · 푼 문항 ${solved}</span>
+          <span class="dim">${n}문항 · 푼 문항 ${solved}${Util.resumeNote(ofType, prefs().order, Listening.record)}</span>
         </button>`;
     }).join('');
 
@@ -31,10 +31,7 @@ const Practice = (() => {
         <span class="crumb">${level} · 유형별 연습</span>
       </div>
       <h2>유형 선택</h2>
-      <div class="segmented" role="radiogroup">
-        <button data-order="seq" class="${prefs().order === 'seq' ? 'active' : ''}">순서대로</button>
-        <button data-order="random" class="${prefs().order === 'random' ? 'active' : ''}">무작위</button>
-      </div>
+      ${Util.orderButtons(prefs().order)}
       <label class="switch inline"><input type="checkbox" data-el="unsolved" ${prefs().unsolvedFirst ? 'checked' : ''}> 안 푼 문항 우선</label>
       <div class="type-grid">${cards}</div>
     `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
@@ -42,16 +39,15 @@ const Practice = (() => {
     $('[data-act="home"]').addEventListener('click', App.showHome);
     $$('[data-order]').forEach((b) => b.addEventListener('click', () => {
       prefs().order = b.dataset.order;
-      $$('[data-order]').forEach((x) => x.classList.toggle('active', x === b));
+      showSetup(level);
     }));
     $('[data-el="unsolved"]').addEventListener('change', (e) => { prefs().unsolvedFirst = e.target.checked; });
     $$('[data-type]').forEach((b) => b.addEventListener('click', () => start(level, b.dataset.type)));
   }
 
   function start(level, type) {
-    let list = Listening.questions(level).filter((q) => q.type === type);
-    if (prefs().order === 'random') list = Util.shuffle(list);
-    // 안 푼 문항 우선: 순서(순서대로/무작위)는 유지한 채 안 푼 문항을 앞으로
+    let list = Util.orderList(Listening.questions(level).filter((q) => q.type === type), prefs().order, Listening.record);
+    // 안 푼 문항 우선: 순서(이어서/처음부터/무작위)는 유지한 채 안 푼 문항을 앞으로
     if (prefs().unsolvedFirst) list = [...list.filter((q) => !Listening.record(q)), ...list.filter((q) => Listening.record(q))];
     session = {
       level, type,

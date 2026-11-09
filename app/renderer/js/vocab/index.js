@@ -24,7 +24,7 @@ const Vocab = (() => {
     // 학습 범위: 'level' 한 레벨만 / 'cumulative' 아래 레벨까지
     get scope() { return Storage.getSetting(SECTION, 'scope', 'level'); },
     set scope(v) { Storage.setSetting(SECTION, 'scope', v); },
-    get order() { return Storage.getSetting(SECTION, 'order', 'seq'); },
+    get order() { return Storage.getSetting(SECTION, 'order', 'resume'); },
     set order(v) { Storage.setSetting(SECTION, 'order', v); },
     get unsolvedFirst() { return Storage.getSetting(SECTION, 'unsolvedFirst', true); },
     set unsolvedFirst(v) { Storage.setSetting(SECTION, 'unsolvedFirst', !!v); },

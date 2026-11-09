@@ -74,5 +74,34 @@ const Util = (() => {
   const verdictText = (answered, answer, blank = '모름') => (answered === answer ? '정답입니다'
     : answered === 0 ? `${blank} — 정답은 ${answer}번` : `오답입니다 — 정답은 ${answer}번`);
 
-  return { esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText };
+  // 유형별 연습 「이어서」: 지난번에 마지막으로 푼 문항(기록 at, 없으면 lastAt) 다음 자리. 다 돌면 처음으로 (기록 없으면 0)
+  const resumeIndex = (list, recordOf) => {
+    const stamp = (r) => (r ? r.at || Date.parse(r.lastAt || '') || 0 : 0);
+    let last = -1;
+    let best = 0;
+    list.forEach((q, i) => { const s = stamp(recordOf(q)); if (s > best) { best = s; last = i; } });
+    return list.length ? (last + 1) % list.length : 0;
+  };
+  // 문항 순서: resume = 이어서(그 자리부터 돌아서 앞 문항은 뒤로), seq = 처음부터, random = 무작위
+  const orderList = (list, order, recordOf) => {
+    if (order === 'random') return shuffle(list);
+    if (order !== 'resume') return list.slice();
+    const k = resumeIndex(list, recordOf);
+    return list.slice(k).concat(list.slice(0, k));
+  };
+  const orderButtons = (order) => `<div class="segmented" role="radiogroup">
+      <button data-order="resume" class="${order === 'resume' ? 'active' : ''}" title="지난번에 푼 문항 다음부터">이어서</button>
+      <button data-order="seq" class="${order === 'seq' ? 'active' : ''}">처음부터</button>
+      <button data-order="random" class="${order === 'random' ? 'active' : ''}">무작위</button>
+    </div>`;
+  // 유형 카드에 붙이는 「다음 N번부터」 (이어서일 때, 푼 적이 있을 때만)
+  const resumeNote = (list, order, recordOf) => {
+    if (order !== 'resume' || !list.some(recordOf)) return '';
+    return ` · <span class="resume-from">다음 ${resumeIndex(list, recordOf) + 1}번부터</span>`;
+  };
+
+  return {
+    esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText,
+    resumeIndex, orderList, orderButtons, resumeNote,
+  };
 })();

@@ -98,6 +98,7 @@ async function run(win) {
   await shot('01-home');
 
   const levels = await js('Object.keys(APP_CONFIG.levels)');
+  await js(`Listening.prefs.order = 'seq'; true`);   // 문항 순서를 데이터 순서로 (「이어서」는 smoke_grammar에서)
   for (const level of levels) {
     await click(`[data-level="${level}"]`);
     await click('[data-mode="practice"]');

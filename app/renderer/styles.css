@@ -108,6 +108,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
 .segmented button { background: var(--surface); border: none; padding: 6px 16px; }
 .segmented button.active { background: var(--accent-strong); color: #fff; }
+.resume-from { color: var(--accent); }
 
 .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .type-card {

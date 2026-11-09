@@ -18,7 +18,7 @@ const Listening = (() => {
     set rate(v) { sessionRate = v; },
     get answerSeconds() { return Storage.getSetting(SECTION, 'answerSeconds', cfg.answerSeconds); },
     set answerSeconds(v) { Storage.setSetting(SECTION, 'answerSeconds', v); },
-    get order() { return Storage.getSetting(SECTION, 'order', 'seq'); },
+    get order() { return Storage.getSetting(SECTION, 'order', 'resume'); },
     set order(v) { Storage.setSetting(SECTION, 'order', v); },
     // 해설 스크립트의 줄별 한국어 해석 표시
     get showKo() { return Storage.getSetting(SECTION, 'showKo', true); },

@@ -228,6 +228,30 @@ async function run(win) {
   await sleep(200);
   check('실전 결과 → 문항 해설', await exists('.verdict'));
 
+  // ---------- 유형별 연습 「이어서」: 지난번에 푼 문항 다음부터 ----------
+  {
+    await home();
+    await js(`Grammar.prefs.unsolvedFirst = false; Grammar.prefs.order = 'resume'; true`);
+    const ids = await js(`Grammar.questions('N5').filter((q) => q.type === 'bunpou').map((q) => q.id)`);
+    // 지금 기록 중 가장 최근에 3번째 문항을 푼 것으로
+    await js(`Grammar.recordAnswer(Grammar.question(${JSON.stringify(ids[2])}), null, true); true`);
+    await click('[data-mode="practice"]');
+    await sleep(150);
+    check('이어서: 기본 순서·유형 카드에 다음 번호', await exists('[data-order="resume"].active')
+      && (await text('[data-type="bunpou"] .resume-from')) === '다음 4번부터', await text('[data-type="bunpou"]'));
+    await click('[data-type="bunpou"]');
+    await sleep(200);
+    check('이어서: 4번 문항부터 시작', (await qid()) === ids[3], await qid());
+    await home();
+    await click('[data-mode="practice"]');
+    await sleep(150);
+    await click('[data-order="seq"]');
+    await sleep(100);
+    await click('[data-type="bunpou"]');
+    await sleep(200);
+    check('처음부터: 1번 문항', (await qid()) === ids[0] && !(await js(`Grammar.prefs.order !== 'seq'`)));
+  }
+
   // ---------- 「모름」: 찍지 않고 오답으로 기록하고 해설 (세 영역 문항 화면·퀴즈) ----------
   const showWith = async (view, q) => {
     await js(`window.__dk = null; ${view}.show(${q}, { crumb: 't', pos: '1 / 1', backLabel: '←', onBack: App.showHome,
