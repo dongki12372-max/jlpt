@@ -92,7 +92,7 @@ const GrammarPoints = (() => {
         <span class="crumb">${p.level} · 문형 사전</span>
       </div>
       <section class="card word-detail point-detail" data-key="${Util.esc(p.key)}">
-        <div class="card-tag">${p.level} · <span class="st st-${st === 'ok' ? 'review' : st}">${Grammar.POINT_STATE_LABEL[st]}</span></div>
+        <div class="card-tag">${p.level} · <span class="st st-${st === 'ok' ? 'review' : st}">${Grammar.POINT_STATE_LABEL[st]}</span>${st === 'weak' ? ` · ${Util.reviewStatus(Grammar.pointRecord(p.key))}` : ''}</div>
         <div class="point-pattern" lang="ja">${Util.esc(p.pattern)}</div>
         <p class="card-meaning">${Util.esc(p.meaning_ko)}</p>
         <p class="connection"><span class="dim small">접속</span> ${Util.esc(p.connection)}</p>
@@ -172,7 +172,7 @@ const GrammarQuiz = (() => {
         <div class="segmented" role="radiogroup">
           ${cfg().quiz.counts.map((n) => `<button data-count="${n}" class="${n === count ? 'active' : ''}">${n}</button>`).join('')}
         </div>
-        <p class="dim small">틀린 문형은 「약한 문형」이 되고, 연속 ${window.APP_CONFIG.reviewClearStreak}번 맞히면 풀립니다.</p>
+        <p class="dim small">틀린 문형은 「약한 문형」이 되고, ${Util.reviewRule('풀립니다')}.</p>
         <div class="next-row"><button class="primary" data-act="start">시작 <span class="kbd">Enter</span></button></div>
       </section>
     `, { onKey: (e) => { if (e.key === 'Escape') GrammarPoints.showList(level, {}); else if (e.key === 'Enter') { e.preventDefault(); begin(); } } });
@@ -190,8 +190,11 @@ const GrammarQuiz = (() => {
     function begin() {
       let r = pref('quizRange', 'level');
       if (!sizes[r]) r = 'level';
-      const list = Util.shuffle(rangePoints(level, r)).slice(0, pref('quizCount', cfg().quiz.defaultCount));
-      run(level, list, pref('quizFormat', 'meaning'));
+      // 약한 문형은 오늘 복습할 것부터
+      const all = Util.shuffle(rangePoints(level, r));
+      const due = (p) => Util.isDue(Grammar.pointRecord(p.key));
+      const list = (r === 'weak' ? [...all.filter(due), ...all.filter((p) => !due(p))] : all).slice(0, pref('quizCount', cfg().quiz.defaultCount));
+      run(level, list);
     }
   }
 
@@ -213,7 +216,14 @@ const GrammarQuiz = (() => {
     return { p, format, options, answer: options.indexOf(p) + 1 };
   }
 
-  function run(level, points, format) {
+  // 문형 목록으로 퀴즈 (문형 퀴즈·오늘의 학습 공용). format을 안 주면 퀴즈 설정에서 고른 형식
+  //   opts: { title, back, backLabel, next: { label, go } } — next가 있으면 결과 화면의 「새로 풀기」 대신 그 버튼
+  function run(level, points, format = null, opts = {}) {
+    format = format || pref('quizFormat', 'meaning');
+    const title = opts.title || '문형 퀴즈';
+    const back = opts.back || (() => GrammarPoints.showList(level, {}));
+    const backLabel = opts.backLabel || '← 문형 사전';
+    const again = opts.next || { label: '새로 풀기', go: () => showSetup(level) };
     // 오답 선택지: 아래 레벨까지의 문형 전체
     const pool = levelsUpTo(level).flatMap(Grammar.points);
     const session = { list: points.map((p) => makeQuestion(p, format, pool)), idx: 0, results: {} };
@@ -237,8 +247,8 @@ const GrammarQuiz = (() => {
 
       App.setScreen(`
         <div class="topbar">
-          <button class="link" data-act="back">← 문형 사전</button>
-          <span class="crumb">${level} · 문형 퀴즈 · ${FORMATS.find((f) => f.id === item.format).label}</span>
+          <button class="link" data-act="back">${Util.esc(backLabel)}</button>
+          <span class="crumb">${level} · ${Util.esc(title)} · ${FORMATS.find((f) => f.id === item.format).label}</span>
           ${Util.stepNav(nav, answered)}
         </div>
         <section class="card flash quiz-q" data-key="${Util.esc(p.key)}">${prompt}</section>
@@ -246,7 +256,7 @@ const GrammarQuiz = (() => {
         <section data-el="result"></section>
       `, { onKey });
 
-      $('[data-act="back"]').addEventListener('click', () => GrammarPoints.showList(level, {}));
+      $('[data-act="back"]').addEventListener('click', back);
       Util.bindStepNav(document, nav);
       GrammarQuestionView.applyPrefs();
       render();
@@ -282,8 +292,8 @@ const GrammarQuiz = (() => {
         if (answered !== null || n < 0 || n > item.options.length) return;
         answered = n;
         const correct = n === item.answer;
-        session.results[p.key] = { n, correct };
-        Grammar.recordPoint(p.key, correct);
+        session.results[p.key] = { n, correct, was: !!(Grammar.pointRecord(p.key) || {}).review };
+        Grammar.recordPoint(p.key, correct, true);
         const skip = $('[data-act="step-skip"]');
         if (skip) skip.textContent = '다음 ›';
         render();
@@ -293,7 +303,7 @@ const GrammarQuiz = (() => {
         if (/^[0-9]$/.test(e.key)) answer(Number(e.key));
         else if (e.key === 'Enter' && answered !== null) { e.preventDefault(); next(); }
         else if (Util.stepKey(e, nav)) e.preventDefault();
-        else if (e.key === 'Escape') GrammarPoints.showList(level, {});
+        else if (e.key === 'Escape') back();
       }
     }
 
@@ -302,26 +312,26 @@ const GrammarQuiz = (() => {
       const asQ = list.map((it) => ({ id: it.p.key }));
       const wrong = list.filter((it) => results[it.p.key] && !results[it.p.key].correct).map((it) => it.p);
       const rows = list.map((it, i) => Util.resultRow(results[it.p.key],
-        `${i + 1}. <span lang="ja">${Util.esc(it.p.pattern)}</span> <span class="dim">${Util.esc(it.p.meaning_ko)}</span>`)).join('');
+        `${i + 1}. <span lang="ja">${Util.esc(it.p.pattern)}</span> <span class="dim">${Util.esc(it.p.meaning_ko)}</span>${Util.reviewBadge(results[it.p.key], Grammar.pointRecord(it.p.key))}`)).join('');
       App.setScreen(`
         <div class="topbar">
-          <button class="link" data-act="back">← 문형 사전</button>
-          <span class="crumb">${level} · 문형 퀴즈 결과</span>
+          <button class="link" data-act="back">${Util.esc(backLabel)}</button>
+          <span class="crumb">${level} · ${Util.esc(title)} 결과</span>
         </div>
         <section class="card done" data-el="gquiz-done">
           ${Util.resultHead(asQ, results)}
-          ${wrong.length ? `<p class="dim">틀린 문형 ${wrong.length}개는 「약한 문형」에 들어갔습니다.</p>` : ''}
+          ${wrong.length ? `<p class="dim">틀린 문형 ${wrong.length}개는 「약한 문형」에 들어갔습니다. 내일 다시 나옵니다.</p>` : ''}
           <ul class="result-list quiz-results">${rows}</ul>
           <div class="next-row">
-            <button class="secondary" data-act="back">문형 사전</button>
+            <button class="secondary" data-act="back">${Util.esc(backLabel.replace(/^← /, ''))}</button>
             ${wrong.length ? '<button class="secondary" data-act="wrong">틀린 것만 다시</button>' : ''}
-            <button class="primary" data-act="again">새로 풀기</button>
+            <button class="primary" data-act="again">${Util.esc(again.label)}</button>
           </div>
         </section>
-      `, { onKey: (e) => { if (e.key === 'Escape') GrammarPoints.showList(level, {}); else if (e.key === 'Enter') { e.preventDefault(); showSetup(level); } } });
-      $$('[data-act="back"]').forEach((b) => b.addEventListener('click', () => GrammarPoints.showList(level, {})));
-      $('[data-act="again"]').addEventListener('click', () => showSetup(level));
-      if (wrong.length) $('[data-act="wrong"]').addEventListener('click', () => run(level, Util.shuffle(wrong), format));
+      `, { onKey: (e) => { if (e.key === 'Escape') back(); else if (e.key === 'Enter') { e.preventDefault(); again.go(); } } });
+      $$('[data-act="back"]').forEach((b) => b.addEventListener('click', back));
+      $('[data-act="again"]').addEventListener('click', again.go);
+      if (wrong.length) $('[data-act="wrong"]').addEventListener('click', () => run(level, Util.shuffle(wrong), format, opts));
     }
   }
 

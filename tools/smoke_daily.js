@@ -1,5 +1,6 @@
 // ============================================================
 // 개발용 스모크 테스트 — 오늘의 학습 (홈 카드, 문항 고르기, 단계 이어 가기, 다 채운 날·연속 일수, 레벨별 분량)
+//   + 복습: 틀린 문항·문형이 복습 간격(config.reviewIntervalsDays)마다 분량 안에서 다시 나오는지
 //   SMOKE_OUT=<출력 폴더> npx electron tools/smoke_daily.js
 // 분량은 app/config.js의 daily에서 읽는다. 앱 코드는 건드리지 않는다.
 // ============================================================
@@ -64,22 +65,26 @@ async function run(win) {
   const D = config.daily.questions;
   const newPerDay = config.sections.vocab.srs.newPerDay;
   const DAY = 24 * 60 * 60 * 1000;
+  const DAYS = config.reviewIntervalsDays;
+  const ALL = 'words,listening,vocab,points,grammar';
+  const note = (part) => text(`[data-daily="${part}"] .note`);
 
   await sleep(800);
 
   // ---------- 홈 카드 ----------
   check('홈에 오늘의 학습 카드', await exists('[data-el="daily"]') && (await text('.daily-head h2')) === '오늘의 학습 N5', await text('.daily-head h2'));
-  check('단계 4개 (단어장·청해·문자어휘·문법)', (await parts()) === 'words,listening,vocab,grammar', await parts());
+  check('단계 5개 (단어장·청해·문자어휘·문형·문법)', (await parts()) === ALL, await parts());
   check('처음 분량', (await count('words')) === `0 / ${newPerDay}장` && (await count('listening')) === `0 / ${D.listening}`
-    && (await count('vocab')) === `0 / ${D.vocab}` && (await count('grammar')) === `0 / ${D.grammar}`,
-  [await count('words'), await count('listening'), await count('vocab'), await count('grammar')].join(' | '));
+    && (await count('vocab')) === `0 / ${D.vocab}` && (await count('points')) === `0 / ${D.points}개` && (await count('grammar')) === `0 / ${D.grammar}`,
+  [await count('words'), await count('listening'), await count('vocab'), await count('points'), await count('grammar')].join(' | '));
+  check('처음에는 복습 표시 없음', (await note('listening')) === '' && (await note('points')) === '');
   check('시작 버튼은 첫 단계', (await text('[data-act="daily-next"]')) === `시작 · 단어장 ${newPerDay}장`, await text('[data-act="daily-next"]'));
   check('연속 0일 · 최근 날 점', (await text('[data-el="daily-streak"]')) === '0'
     && (await js(`document.querySelectorAll('.day-dot').length`)) === config.daily.weekDays && (await js(`document.querySelectorAll('.day-dot.on').length`)) === 0);
   await shot('home');
   await click('[data-section="grammar"]');
   await sleep(150);
-  check('다른 영역 탭에서도 같은 카드', (await parts()) === 'words,listening,vocab,grammar');
+  check('다른 영역 탭에서도 같은 카드', (await parts()) === ALL);
 
   // ---------- 문항 고르기: 유형마다 고르게 ----------
   for (const part of ['listening', 'vocab', 'grammar']) {
@@ -95,7 +100,11 @@ async function run(win) {
     check(`${part}: ${D[part]}문항을 유형마다 고르게`, r.n === D[part] && r.uniq === r.n && spread <= 1 && r.sorted, JSON.stringify(r));
   }
 
-  // ---------- 청해 → 문자·어휘 → 문법 이어 가기 ----------
+  const pp = await js(`(() => { const list = Daily.pickPoints('N5', ${D.points}); const all = Grammar.points('N5');
+    return { n: list.length, inOrder: list.every((x, i) => x.key === all[i].key) }; })()`);
+  check(`points: 처음에는 문형 사전 순서로 ${D.points}개`, pp.n === D.points && pp.inOrder, JSON.stringify(pp));
+
+  // ---------- 청해 → 문자·어휘 → 문형 → 문법 이어 가기 ----------
   const dontKnowAll = async () => {
     for (let i = 0; i < 8 && await exists('[data-act="dontknow"]'); i++) { await click('[data-act="dontknow"]'); await sleep(80); }
   };
@@ -110,6 +119,16 @@ async function run(win) {
     await sleep(200);
   }
   check('청해 결과 → 다음 단계 버튼', (await text('[data-act="again"]')) === `다음 · 문자·어휘 ${D.vocab}문항` && (await text('.crumb')).includes('오늘의 학습'), await text('[data-act="again"]'));
+  check('청해 결과: 틀린 문항마다 「복습 내일」', (await js(`[...document.querySelectorAll('.result-list .badge')].map((b) => b.textContent).join(',')`)) === Array(D.listening).fill('복습 내일').join(','),
+    await text('.result-list'));
+  // 틀린 청해 문항의 핵심 단어(kind word)는 단어장으로: 아직 시작하지 않은 단어라 새 카드 맨 앞
+  const pulled = await js(`(() => {
+    const start = Srs.dayStart(Util.now());
+    const keys = Listening.questions('N5').filter((q) => (Listening.record(q) || {}).at >= start)
+      .flatMap((q) => q.vocab.filter((v) => v.kind === 'word').map((v) => v.word + '|' + v.reading));
+    return { n: keys.length, queued: keys.filter((k) => Vocab.store().priorityNew.includes(k)).length };
+  })()`);
+  check('틀린 청해 문항의 단어 → 단어장 새 카드 맨 앞', pulled.n > 0 && pulled.queued === pulled.n && (await text('.done')).includes('단어장 오늘 복습에 넣었습니다'), JSON.stringify(pulled));
   check('오늘 푼 문항은 다시 고르지 않음', (await js(`Daily.pick('listening', 'N5', 50).length`)) === (await js(`Listening.questions('N5').length`)) - D.listening
     && !(await js(`Daily.pick('listening', 'N5', 50).some((q) => q.id === ${JSON.stringify(firstListening)})`)));
   await click('[data-act="again"]');
@@ -123,7 +142,28 @@ async function run(win) {
     await click('[data-act="next"]');
     await sleep(150);
   }
-  check('문자·어휘 결과 → 다음 단계 버튼', (await text('[data-act="again"]')) === `다음 · 문법 ${D.grammar}문항`, await text('[data-act="again"]'));
+  check('문자·어휘 결과 → 다음 단계 버튼', (await text('[data-act="again"]')) === `다음 · 문형 ${D.points}개`, await text('[data-act="again"]'));
+  await click('[data-act="again"]');
+  await sleep(300);
+  check('문형 단계 시작 (퀴즈)', await exists('.quiz-q') && (await text('.topbar')).includes(`1 / ${D.points}`) && (await text('[data-act="back"]')) === '← 홈'
+    && (await text('.crumb')).includes('오늘의 학습 · 문형'), await text('.topbar'));
+  // 첫 문형만 맞히고 나머지는 모름
+  let pointRight = null;
+  for (let i = 0; i < D.points; i++) {
+    if (i === 0) {
+      pointRight = await js(`document.querySelector('.quiz-q').dataset.key`);
+      await js(`(() => { const p = Grammar.point(${JSON.stringify(pointRight)});
+        [...document.querySelectorAll('button.opt')].find((b) => [p.meaning_ko, p.pattern].includes(b.querySelector('.opt-text').textContent)).click(); return true; })()`);
+    } else await click('[data-act="dontknow"]');
+    await sleep(100);
+    await click('[data-act="next"]');
+    await sleep(150);
+  }
+  check('문형 결과 → 다음 단계 버튼', await exists('[data-el="gquiz-done"]') && (await text('[data-act="again"]')) === `다음 · 문법 ${D.grammar}문항`
+    && (await text('[data-el="gquiz-done"] h2')) === `1 / ${D.points} 정답`, `${await text('[data-act="again"]')} | ${await text('[data-el="gquiz-done"] h2')}`);
+  check('틀린 문형은 약한 문형, 내일 복습', (await js(`Grammar.points('N5').filter((p) => (Grammar.pointRecord(p.key) || {}).review).length`)) === D.points - 1
+    && (await js(`Grammar.duePoints('N5').length`)) === 0 && (await js(`Grammar.duePoints('N5', Util.now() + ${DAY}).length`)) === D.points - 1);
+  await shot('points-done');
   await click('[data-act="again"]');
   await sleep(300);
   check('문법 단계 시작', (await text('.topbar .pos')).includes(`1 / ${D.grammar}`) && await exists('.gq'), await text('.topbar .pos'));
@@ -136,8 +176,9 @@ async function run(win) {
   check('마지막 단계 결과에는 다음 버튼 없음', await exists('[data-el="grammar-done"]') && !(await exists('[data-act="again"]')));
   await click('[data-act="back"]');
   await sleep(200);
-  check('홈: 문제 3단계 끝, 단어장 남음', (await parts()) === 'words,listening(done),vocab(done),grammar(done)', await parts());
-  check('홈: 채운 분량 표시', (await count('listening')) === `${D.listening} / ${D.listening}` && (await count('vocab')) === `${D.vocab} / ${D.vocab}` && (await count('grammar')) === `${D.grammar} / ${D.grammar}`);
+  check('홈: 문제 4단계 끝, 단어장 남음', (await parts()) === 'words,listening(done),vocab(done),points(done),grammar(done)', await parts());
+  check('홈: 채운 분량 표시', (await count('listening')) === `${D.listening} / ${D.listening}` && (await count('vocab')) === `${D.vocab} / ${D.vocab}`
+    && (await count('points')) === `${D.points} / ${D.points}개` && (await count('grammar')) === `${D.grammar} / ${D.grammar}`);
   check('아직 다 채우지 않음', !(await exists('[data-el="daily-done"]')) && (await text('[data-act="daily-next"]')) === `이어서 · 단어장 ${newPerDay}장`, await text('[data-act="daily-next"]'));
   await shot('progress');
 
@@ -157,7 +198,7 @@ async function run(win) {
   check('홈으로 돌아오기 전에도 다 채운 날로 남음', (await js(`JSON.stringify((Storage.data.sections.plan || {}).studyDays || [])`)).includes(' N5'));
   await click('[data-el="deck-done"] [data-act="back"]');
   await sleep(200);
-  check('오늘 분량 끝', await exists('[data-el="daily-done"]') && !(await exists('[data-act="daily-next"]')) && (await parts()) === 'words(done),listening(done),vocab(done),grammar(done)', await parts());
+  check('오늘 분량 끝', await exists('[data-el="daily-done"]') && !(await exists('[data-act="daily-next"]')) && (await parts()) === 'words(done),listening(done),vocab(done),points(done),grammar(done)', await parts());
   check('연속 1일 · 오늘 점', (await text('[data-el="daily-streak"]')) === '1' && await exists('.day-dot.today.on'));
   check('다 채운 날 기록 (sections.plan.studyDays)', (await js(`JSON.stringify(Storage.data.sections.plan.studyDays)`)) === JSON.stringify([`${await js('Srs.dayKey(Util.now())')} N5`]),
     await js(`JSON.stringify(Storage.data.sections.plan.studyDays)`));
@@ -181,16 +222,16 @@ async function run(win) {
   // ---------- 분량 바꾸기 ----------
   await click('[data-act="daily-setup"]');
   await sleep(150);
-  check('분량 화면', await exists('[data-el="daily-setup"]') && (await text('.crumb')) === 'N4 · 하루 분량' && (await js(`document.querySelectorAll('[data-amount]').length`)) === 4);
+  check('분량 화면', await exists('[data-el="daily-setup"]') && (await text('.crumb')) === 'N4 · 하루 분량' && (await js(`document.querySelectorAll('[data-amount]').length`)) === 5);
   await shot('setup');
   await setAmount('listening', 3);
   await setAmount('grammar', 0);
   check('바꾸면 바로 저장', (await text('[data-el="saved"]')) === '저장했습니다.' && (await js(`Daily.amounts('N4').listening`)) === 3);
   await click('[data-act="home"]');
   await sleep(150);
-  check('N4 분량 반영 (청해 3문항, 문법 빼기)', (await count('listening')) === '1 / 3' && (await parts()) === 'words,listening,vocab', `${await count('listening')} | ${await parts()}`);
+  check('N4 분량 반영 (청해 3문항, 문법 빼기)', (await count('listening')) === '1 / 3' && (await parts()) === 'words,listening,vocab,points', `${await count('listening')} | ${await parts()}`);
   check('N5 분량은 그대로', (await js(`Daily.amounts('N5').listening`)) === D.listening && (await js(`Daily.amounts('N5').grammar`)) === D.grammar);
-  await js(`['listening', 'vocab'].forEach((p) => Daily.setAmount('N4', p, 0)); Daily.setAmount('N4', 'words', false); true`);
+  await js(`['listening', 'vocab', 'points'].forEach((p) => Daily.setAmount('N4', p, 0)); Daily.setAmount('N4', 'words', false); true`);
   await home('N4');
   check('분량이 없으면 안내', (await parts()) === '' && (await text('[data-el="daily"]')).includes('정해져 있지 않습니다'), await text('[data-el="daily"]'));
 
@@ -199,16 +240,70 @@ async function run(win) {
   await home('N5');
   check('다음 날: 분량 다시 0', (await count('listening')) === `0 / ${D.listening}` && (await count('vocab')) === `0 / ${D.vocab}` && !(await exists('[data-el="daily-done"]')), await count('listening'));
   check('다음 날: 연속 일수는 어제까지', (await text('[data-el="daily-streak"]')) === '1' && !(await exists('.day-dot.today.on')) && (await js(`document.querySelectorAll('.day-dot.on').length`)) === 1);
-  const cap = Math.floor(D.listening * config.daily.reviewShare);
+  // ---------- 복습: 어제 틀린 것이 오늘 분량 안에서 먼저 ----------
+  const cap = Math.floor(D.listening * config.daily.reviewShare);   // 어제 청해 분량을 전부 틀렸다
   const mix = await js(`(() => {
     const list = Daily.pick('listening', 'N5', ${D.listening});
     return { wrong: list.filter((q) => (Listening.record(q) || {}).review).length, fresh: list.filter((q) => !Listening.record(q)).length };
   })()`);
-  check(`틀렸던 문항은 분량의 절반까지 (${cap}) + 나머지는 안 푼 문항`, mix.wrong === cap && mix.fresh === D.listening - cap, JSON.stringify(mix));
+  check(`어제 틀린 청해 문항이 먼저 (${cap}) + 나머지는 안 푼 문항`, mix.wrong === cap && mix.fresh === D.listening - cap, JSON.stringify(mix));
+  // 약한 문형 = 퀴즈에서 틀린 문형 + 문법 문제에서 틀린 문형
+  const duePoints = await js(`Grammar.duePoints('N5').length`);
+  check('홈: 단계마다 「복습 N」', (await note('listening')) === `복습 ${cap}` && (await note('vocab')) === '복습 1'
+    && duePoints >= D.points - 1 && (await note('points')) === `복습 ${Math.min(D.points, duePoints)}`,
+  [await note('listening'), await note('vocab'), await note('points'), duePoints].join(' | '));
+  await click('[data-section="listening"]');
+  await sleep(150);
+  check('홈 오답노트 카드: 오늘 복습 수', (await text('[data-mode="review"] .mode-desc')) === `${D.listening}문항 · 오늘 복습 ${D.listening}`, await text('[data-mode="review"] .mode-desc'));
+  await shot('next-day');
   check('어제 틀린 어휘 문항이 다시 나옴', await js(`Daily.pick('vocab', 'N5', ${D.vocab}).some((q) => q.id === ${JSON.stringify(vocabWrong)})`));
-  await js(`Util.setClockOffset(${2 * DAY}); true`);
+  const pts = await js(`(() => { const list = Daily.pickPoints('N5', ${D.points}); const rec = (p) => Grammar.pointRecord(p.key);
+    const k = list.findIndex((p) => !Util.isDue(rec(p)));
+    return { n: list.length, due: list.filter((p) => Util.isDue(rec(p))).length, dueFirst: k < 0 || list.slice(k).every((p) => !Util.isDue(rec(p))),
+      restNew: list.every((p) => Util.isDue(rec(p)) || !rec(p)) }; })()`);
+  check('어제 틀린 문형이 먼저, 남은 자리는 처음 보는 문형', pts.n === D.points && pts.due === Math.min(D.points, duePoints) && pts.dueFirst && pts.restNew, JSON.stringify(pts));
+  check('어제 맞힌 문형은 약한 문형이 아님 → 복습에 없음', await js(`(() => { const r = Grammar.pointRecord(${JSON.stringify(pointRight)}); return !!r.quizAt && (r.review || !Util.isDue(r)); })()`));
+
+  // ---------- 복습 간격: 복습 날마다 맞혀야 다음 단계, 마지막까지 맞히면 빠짐 ----------
+  const rec = () => js(`Storage.item('vocab', ${JSON.stringify(vocabWrong)})`);
+  const answer = (ok) => js(`VocabPractice.record(Vocab.questions('N5').find((q) => q.id === ${JSON.stringify(vocabWrong)}), ${ok}); true`);
+  const inPick = () => js(`Daily.pick('vocab', 'N5', ${D.vocab}).some((q) => q.id === ${JSON.stringify(vocabWrong)})`);
+  const dayStart = (offset) => js(`Srs.dayStart(Date.now() + ${offset})`);
+  let r = await rec();
+  check(`틀린 문항: 복습 0/${DAYS.length}, ${DAYS[0]}일 뒤`, r.review && r.stage === 0 && r.due === await dayStart(DAYS[0] * DAY), JSON.stringify(r));
+  let at = DAYS[0] * DAY;   // 지금 시계
+  await js(`Util.setClockOffset(${at}); true`);
+  await answer(true);
+  r = await rec();
+  check(`복습 날에 맞힘 → 1/${DAYS.length}, ${DAYS[1]}일 뒤`, r.review && r.stage === 1 && r.due === await dayStart(at + DAYS[1] * DAY), JSON.stringify(r));
+  await js(`Util.setClockOffset(${at + DAY}); true`);
   await home('N5');
   check('하루 거르면 연속 0일', (await text('[data-el="daily-streak"]')) === '0');
+  check('복습 날 전에는 오늘의 학습에 안 나옴', !(await inPick()) && (await note('vocab')) === '');
+  const before = JSON.stringify([r.stage, r.due]);
+  await answer(true);
+  r = await rec();
+  check('복습 날 전에 맞힌 것은 세지 않음', r.review && JSON.stringify([r.stage, r.due]) === before, JSON.stringify(r));
+  at += DAYS[1] * DAY;
+  await js(`Util.setClockOffset(${at}); true`);
+  check('복습 날이 되면 다시 나옴', await inPick());
+  await answer(true);
+  r = await rec();
+  check(`두 번째 복습도 맞힘 → 2/${DAYS.length}, ${DAYS[2]}일 뒤`, r.review && r.stage === 2 && r.due === await dayStart(at + DAYS[2] * DAY), JSON.stringify(r));
+  at += DAYS[2] * DAY;
+  await js(`Util.setClockOffset(${at}); true`);
+  await answer(true);
+  r = await rec();
+  check('마지막 복습까지 맞히면 오답노트에서 빠짐', !r.review && r.stage === undefined && r.due === undefined, JSON.stringify(r));
+  await answer(false);
+  await js(`Util.setClockOffset(${at + DAYS[0] * DAY}); true`);
+  await answer(true);
+  await js(`Util.setClockOffset(${at + (DAYS[0] + DAYS[1]) * DAY}); true`);
+  await answer(false);
+  r = await rec();
+  check('복습 중에 틀리면 처음부터', r.review && r.stage === 0 && r.due === await dayStart(at + (DAYS[0] + DAYS[1] + DAYS[0]) * DAY), JSON.stringify(r));
+  const old = await js(`(() => { const it = { attempts: 1, lastCorrect: false, streak: 0, review: true, at: 1 }; return Util.isDue(it) && Util.reviewStatus(it); })()`);
+  check('일정이 생기기 전에 틀린 기록은 바로 복습', old === `복습 0/${DAYS.length} · 오늘`, String(old));
   await js(`Util.setClockOffset(0); true`);
 
   // ---------- 기기 간 합치기 ----------

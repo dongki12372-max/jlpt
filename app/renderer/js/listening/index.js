@@ -39,8 +39,16 @@ const Listening = (() => {
 
   // 기록
   const record = (q) => Storage.item(SECTION, q.id);
-  const recordAnswer = (q, correct) => Storage.recordAnswer(SECTION, q.id, correct);
+  // 틀리면 그 문항의 핵심 단어를 단어장 「오늘 다시 볼 카드」로 당긴다 (단어장에 있는 단어만, Vocab.pullWords)
+  function recordAnswer(q, correct) {
+    const it = Storage.recordAnswer(SECTION, q.id, correct);
+    if (!correct && typeof Vocab !== 'undefined') {
+      Vocab.pullWords(q.vocab.filter((v) => v.kind === 'word').map((v) => `${v.word}|${v.reading}`), Util.now());
+    }
+    return it;
+  }
   const reviewList = (level) => questions(level).filter((q) => (record(q) || {}).review);
+  const dueList = (level, now = Util.now()) => reviewList(level).filter((q) => Util.isDue(record(q), now));   // 오늘 복습할 오답노트 문항
   const exams = (level) => Storage.section(SECTION).exams.filter((e) => e.level === level);
 
   // ---------- 홈 ----------
@@ -49,7 +57,7 @@ const Listening = (() => {
     return [
       { id: 'practice', title: '유형별 연습', desc: '유형을 골라 한 문제씩 풀고 바로 해설 확인', enabled: true, open: () => Practice.showSetup(level) },
       { id: 'exam', title: '실전 모의', desc: '실제 순서·시간대로 한 번만 듣고 풀기', enabled: true, open: () => Exam.showStart(level) },
-      { id: 'review', title: '오답노트', desc: nReview ? `${nReview}문항 · 연속 ${window.APP_CONFIG.reviewClearStreak}번 맞히면 빠짐` : '틀린 문항이 없습니다', enabled: true, open: () => Review.show(level) },
+      { id: 'review', title: '오답노트', desc: Util.reviewDesc(nReview, dueList(level).length), enabled: true, open: () => Review.show(level) },
     ];
   }
 
@@ -110,5 +118,5 @@ const Listening = (() => {
 
   App.registerSection(SECTION, { load, modes, summary, settings });
 
-  return { SECTION, cfg, prefs, questions, levelTypes, audioUrl, audioInfo, readImage, record, recordAnswer, reviewList, exams };
+  return { SECTION, cfg, prefs, questions, levelTypes, audioUrl, audioInfo, readImage, record, recordAnswer, reviewList, dueList, exams };
 })();

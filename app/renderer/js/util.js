@@ -100,7 +100,37 @@ const Util = (() => {
     return ` · <span class="resume-from">다음 ${resumeIndex(list, recordOf) + 1}번부터</span>`;
   };
 
+  // ---------- 오답노트 복습 일정 (config.reviewIntervalsDays, 기록은 Storage.recordAnswer) ----------
+  const reviewDays = () => window.APP_CONFIG.reviewIntervalsDays;
+  // 오늘 복습할 차례인지 (오답노트에 있고 복습 날이 됨. 일정이 생기기 전에 틀린 기록은 바로)
+  const isDue = (r, t = now()) => !!r && !!r.review && (r.due || 0) <= t;
+  // 복습 날: 「오늘」「내일」「3일 뒤」
+  const reviewWhen = (r, t = now()) => {
+    if (isDue(r, t)) return '오늘';
+    const d = Math.round((Srs.dayStart(r.due) - Srs.dayStart(t)) / Srs.DAY);
+    return d <= 1 ? '내일' : `${d}일 뒤`;
+  };
+  // 오답노트 목록의 한 줄: 「복습 1/3 · 3일 뒤」
+  const reviewStatus = (r, t = now()) => `복습 ${r.stage || 0}/${reviewDays().length} · ${reviewWhen(r, t)}`;
+  const reviewRule = (end = '빠집니다') => `${reviewDays().join('일 → ')}일 뒤에 차례로 다시 맞히면 ${end}`;
+  // 오답노트 화면 위쪽: 「오늘 복습 N문항」(복습 날이 된 것만) + 「전체 다시 풀기」. 누르면 [data-act="due"|"all"]
+  const reviewButtons = (nDue) => `
+      <div class="next-row left review-start">
+        ${nDue ? `<button class="primary" data-act="due">오늘 복습 ${nDue}문항 <span class="kbd">Enter</span></button>` : ''}
+        <button class="${nDue ? 'secondary' : 'primary'}" data-act="all">전체 다시 풀기${nDue ? '' : ' <span class="kbd">Enter</span>'}</button>
+      </div>
+      <p class="dim small">${reviewRule()}. ${nDue ? '' : '오늘 복습할 문항은 없습니다. '}복습 날이 되기 전에 맞힌 것은 세지 않고, 틀리면 처음부터입니다.</p>`;
+  // 홈 오답노트 카드의 설명 (n = 오답노트 문항 수, due = 그중 오늘 복습할 수)
+  const reviewDesc = (n, due) => (n ? `${n}문항 · 오늘 복습 ${due}` : '틀린 문항이 없습니다');
+  // 결과 목록의 한 줄에 붙이는 표시 (r = 이번 풀이 { correct, was: 풀기 전에 오답노트에 있었는지 }, rec = 지금 기록)
+  const reviewBadge = (r, rec) => {
+    if (!r) return '';
+    if (rec && rec.review) return ` <span class="badge">복습 ${reviewWhen(rec)}</span>`;
+    return r.was ? ' <span class="badge ok">오답노트에서 빠짐</span>' : '';
+  };
+
   return {
+    isDue, reviewWhen, reviewStatus, reviewRule, reviewButtons, reviewDesc, reviewBadge,
     esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText,
     stamp, resumeIndex, orderList, orderButtons, resumeNote,
   };

@@ -401,18 +401,23 @@ async function reviewTests({ js, click, exists, text, key }) {
   await click(`[data-remove="${first}"]`);
   await sleep(150);
   check('오답노트: 수동 빼기', !(await js(`Storage.item('vocab', ${JSON.stringify(first)}).review`)) && (await js(`Vocab.reviewList(${JSON.stringify(level)}).length`)) === n - 1);
-  // 연속 2번 맞히면 자동 제거
+  // 복습 간격(config.reviewIntervalsDays)마다 맞히면 자동 제거. 날짜는 기록의 복습 날로 맞춘다
   const target = await js(`(() => { const q = Vocab.reviewList(${JSON.stringify(level)})[0]; return q ? { id: q.id, answer: q.answer } : null; })()`);
   if (target) {
-    for (let r = 0; r < 2; r++) {
+    const base = await js('Util.now() - Date.now()');
+    const days = await js('APP_CONFIG.reviewIntervalsDays');
+    for (let r = 0; r < days.length; r++) {
+      await js(`Util.setClockOffset(Storage.item('vocab', ${JSON.stringify(target.id)}).due - Date.now()); true`);
       // 오답노트 다시 풀기 화면을 그 문항 하나로 연다 (VocabReview와 같은 실행 경로)
       await js(`(() => { const q = Vocab.questions(${JSON.stringify(level)}).find(x => x.id === ${JSON.stringify(target.id)});
         VocabPractice.run({ level: ${JSON.stringify(level)}, list: [q], title: '오답노트', back: () => VocabReview.show(${JSON.stringify(level)}), review: true }); return true; })()`);
       await sleep(200);
       await key(String(target.answer));
       await sleep(150);
+      if (r === 0) check('오답노트: 복습 날에 맞히면 다음 단계, 아직 남아 있음', (await js(`(() => { const it = Storage.item('vocab', ${JSON.stringify(target.id)}); return it.review && it.stage === 1; })()`)));
     }
-    check('오답노트: 연속 2번 정답 → 자동으로 빠짐', !(await js(`Storage.item('vocab', ${JSON.stringify(target.id)}).review`)));
+    check(`오답노트: 복습 ${days.length}번을 다 맞힘 → 자동으로 빠짐`, !(await js(`Storage.item('vocab', ${JSON.stringify(target.id)}).review`)));
+    await js(`Util.setClockOffset(${base}); true`);
   }
 }
 

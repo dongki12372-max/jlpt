@@ -6,7 +6,7 @@
 
 | 위치 | 규칙 |
 |---|---|
-| `app/config.js` | `levels`(전 영역 공통), `sectionOrder`, `sections.{영역}` (`label_ko`, `label_ja`, `enabled` + 영역 전용 설정). 청해의 유형·실전 구성·타이밍은 `sections.listening` 안에 있다. `reviewClearStreak`은 전 영역 공통 |
+| `app/config.js` | `levels`(전 영역 공통), `sectionOrder`, `sections.{영역}` (`label_ko`, `label_ja`, `enabled` + 영역 전용 설정). 청해의 유형·실전 구성·타이밍은 `sections.listening` 안에 있다. `reviewIntervalsDays`(오답노트 복습 간격)는 전 영역 공통 |
 | `data/{영역}/` | 영역 데이터. 청해: `questions/{n5,n4,n3}.json`, `schema.json`, `intros.json`, `images/` |
 | `audio/{영역}/` | 생성 음성과 `manifest.json` (git 제외). 청해: `audio/listening/{level}/{id}.mp3` |
 | `app/renderer/js/web.js` | `LOADERS.{영역}`이 그 영역 데이터를 fetch로 읽는다 (`window.jlpt.loadSection`, `readImage`). 기록은 localStorage (`loadProgress`·`saveProgress`). 예전 Electron 앱의 main.js·preload.js는 0.4.0 뒤에 없앴다 |
@@ -60,12 +60,13 @@
 ```
 
 - **items**: 문항별 기록. 공통 필드는 `attempts`, `lastCorrect`, `streak`(연속 정답 수), `lastAt`이다. 영역마다 필드를 더 붙일 수 있다. 예를 들어 단어장은 SRS 상태(`srs: { due, interval, ease }`)를 둔다.
-- **오답노트는 별도 목록이 아니라 `items[*].review` 플래그**다. 틀리면 `true`가 되고, `streak`이 `reviewClearStreak`(2) 이상이 되면 자동으로 `false`가 된다. 수동으로 빼면 `false`가 되고 `reviewManual: true`를 남긴다. 영역별 오답노트는 해당 영역 `items`를 거르기만 하면 된다.
+- **오답노트는 별도 목록이 아니라 `items[*].review` 플래그**다. 틀리면 `true`가 되고 복습 일정이 붙는다 — `stage`(맞힌 복습 횟수, 0부터)와 `due`(다음 복습 날의 시작, ms). 간격은 `config.reviewIntervalsDays`(1 · 3 · 7일): 틀리면 `stage = 0`, `due` = 내일. `due`가 된 뒤에 맞히면 `stage`가 하나 오르고 `due`는 그날부터 다음 간격 뒤, 마지막 간격까지 맞히면 `review = false`(`stage`·`due` 삭제). `due` 전에 맞힌 것은 일정을 바꾸지 않고, 틀리면 언제든 처음으로 돌아간다. 하루의 경계는 단어장과 같은 새벽 4시(`Srs.dayStart`). `due`가 없는 옛 기록은 바로 복습할 것으로 본다(`Util.isDue`). 수동으로 빼면 `false`가 되고 `reviewManual: true`를 남긴다. 영역별 오답노트는 해당 영역 `items`를 거르기만 하면 되고(`reviewList`), 그중 오늘 복습할 것은 `dueList`다. 문법의 약한 문형(`point:{key}`)도 같은 일정이다(`Grammar.duePoints`).
+- **틀린 문항 → 단어장**: 문자·어휘 문항은 `targets`, 청해 문항은 `vocab`의 `kind: word` 단어를 `Vocab.pullWords`로 당긴다 (시작한 카드는 지금 예정으로, 아직 안 본 단어는 새 카드 맨 앞).
 - **exams**: 실전 모의 기록. `full`은 config의 정식 문항 수로 출제했는지(문제 은행이 부족하면 false), `seconds`는 소요 시간이다. `answers`가 있어서 나중에 기록 화면에서 문항별 해설로 다시 들어갈 수 있다. `byType`의 키는 영역마다 다르다(청해는 유형, 문법은 문제 형식).
 - **settings**: `common`은 전 영역 공통(후리가나 표시 등), 나머지는 영역 키 아래에 둔다. 청해는 `playbackRate`(연습 기본 속도), `answerSeconds`, `order`(seq/random), `unsolvedFirst`.
 - 실전 모의의 답도 `items`에 기록한다(무응답은 오답). 저장은 임시 파일에 쓴 뒤 바꿔 넣고, 깨진 파일은 `progress.json.broken-<시각>`으로 보관한 뒤 빈 기록으로 시작한다.
 - 테스트는 `JLPT_USER_DATA` 환경 변수로 저장 위치를 바꿔 실제 기록을 건드리지 않는다.
-- **오늘의 학습** (`js/daily.js`): 진도는 따로 저장하지 않고 `items[*].at`(문항)·카드의 `at`·`due`(단어장)에서 오늘(새벽 4시부터) 한 양을 센다. 저장하는 것은 두 가지뿐이다 — 레벨별 분량 `settings.daily.{N5|N4|N3} = { words, listening, vocab, grammar }`(없으면 `config.daily`), 분량을 다 채운 날 `sections.plan.studyDays = ['YYYY-MM-DD N5', …]`(영역이 아닌 기록용 키, 기기 간 합집합). 단어장의 하루 새 카드 수는 `sections.vocab.daily.byLevel`로 단어 레벨마다 센다.
+- **오늘의 학습** (`js/daily.js`): 진도는 따로 저장하지 않고 `items[*].at`(문항)·카드의 `at`·`due`(단어장)에서 오늘(새벽 4시부터) 한 양을 센다. 저장하는 것은 두 가지뿐이다 — 레벨별 분량 `settings.daily.{N5|N4|N3} = { words, listening, vocab, points, grammar }`(없으면 `config.daily`), 분량을 다 채운 날 `sections.plan.studyDays = ['YYYY-MM-DD N5', …]`(영역이 아닌 기록용 키, 기기 간 합집합). 단어장의 하루 새 카드 수는 `sections.vocab.daily.byLevel`로 단어 레벨마다 센다. `points`는 문형 퀴즈 단계로, 오늘 퀴즈로 본 문형을 `point:{key}` 기록의 `quizAt`으로 센다. 복습은 따로 단계를 두지 않고 분량 안에서 한다 — `Daily.pick`·`pickPoints`가 오늘 복습할 것(`Util.isDue`)을 먼저 고르고(`config.daily.reviewShare`까지), 복습 날이 아직 안 된 오답노트 문항은 맨 뒤로 미룬다.
 - 영역 키가 없으면 빈 기록으로 본다. 그래서 새 영역을 추가할 때 마이그레이션이 필요 없다. 구조를 바꿀 때만 `version`을 올린다.
 
 ## 3. 단어 데이터 형식 (청해 vocab → 단어장)

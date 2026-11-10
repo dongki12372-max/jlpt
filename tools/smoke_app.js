@@ -473,7 +473,7 @@ async function storageTests(win, { js, click, exists, text, key, shot, player })
   await reload();
   check('다시 불러와도 기록 유지', JSON.stringify(await items()) === before);
 
-  // 오답노트: 목록 · 수동 제거 · 연속 2번 정답 자동 제거
+  // 오답노트: 목록 · 수동 제거 · 복습 간격마다 맞히면 자동 제거
   await click('[data-level="N3"]');
   await click('[data-mode="review"]');
   await sleep(200);
@@ -488,9 +488,25 @@ async function storageTests(win, { js, click, exists, text, key, shot, player })
   check('오답노트 수동 제거', !it[removeId].review && it[removeId].reviewManual
     && (await js('document.querySelectorAll(".review-list li").length')) === shown - 1);
 
-  // 연속 정답 0인 오답 문항 (실전 모의는 순서가 무작위라 이미 한 번 맞힌 문항이 섞여 있을 수 있다)
-  const target = await js('Listening.reviewList("N3").find(q => Listening.record(q).streak === 0)');
-  for (let round = 1; round <= 2; round++) {
+  // 오늘 틀린 문항은 내일부터 복습 → 「오늘 복습」 버튼 없음, 목록에 복습 단계와 날
+  const DAYS = await js('APP_CONFIG.reviewIntervalsDays');
+  const DAY = 24 * 60 * 60 * 1000;
+  check('오답노트: 오늘 틀린 문항은 내일 복습', !(await exists('[data-act="due"]')) && (await js('Listening.dueList("N3").length')) === 0
+    && (await text('.review-list li .dim')).endsWith(`복습 0/${DAYS.length} · 내일`), await text('.review-list li .dim'));
+  // 복습 날마다 그 유형을 다시 풀어 맞힌다: 오늘(세지 않음) → 1일 뒤 → 3일 더 뒤 → 7일 더 뒤(빠짐)
+  const target = await js('Listening.reviewList("N3").find(q => Listening.record(q).stage === 0)');
+  let offset = 0;
+  for (let round = 0; round <= DAYS.length; round++) {
+    if (round > 0) {
+      offset += DAYS[round - 1] * DAY;
+      await js(`Util.setClockOffset(${offset}); Review.show('N3'); true`);
+      await sleep(200);
+      if (round === 1) {
+        check('오답노트: 복습 날이 되면 「오늘 복습 N문항」', (await text('[data-act="due"]')).startsWith(`오늘 복습 ${await js('Listening.dueList("N3").length')}문항`)
+          && (await js('Listening.dueList("N3").length')) === (await js('Listening.reviewList("N3").length')), await text('[data-act="due"]'));
+        await shot('12b-review-due-N3');
+      }
+    }
     await click(`[data-start-type="${target.type}"]`);
     await sleep(600);
     // 같은 유형의 오답이 여러 개일 수 있다: 화면의 문항마다 정답을 눌러 끝까지 진행
@@ -503,11 +519,14 @@ async function storageTests(win, { js, click, exists, text, key, shot, player })
     }
     await sleep(300);
     const r = (await items())[target.id];
-    if (round === 1) check('오답노트: 1번 정답 후에는 남아 있음', r.review && r.streak === 1, `streak ${r.streak}`);
-    else check('오답노트: 연속 2번 정답이면 자동으로 빠짐', !r.review && r.streak === 2, `streak ${r.streak}`);
+    const badge = await js(`(() => { const li = [...document.querySelectorAll('.result-list li')].find((x) => x.textContent.includes(${JSON.stringify(target.id)})); const b = li && li.querySelector('.badge'); return b ? b.textContent : ''; })()`);
+    if (round === 0) check('오답노트: 복습 날 전에 맞힌 것은 세지 않음', r.review && r.stage === 0 && badge === '복습 내일', `stage ${r.stage} · ${badge}`);
+    else if (round < DAYS.length) check(`오답노트: ${round}번째 복습 정답 → ${DAYS[round]}일 뒤`, r.review && r.stage === round && badge === `복습 ${DAYS[round]}일 뒤`, `stage ${r.stage} · ${badge}`);
+    else check('오답노트: 마지막 복습까지 맞히면 자동으로 빠짐', !r.review && r.stage === undefined && badge === '오답노트에서 빠짐', `stage ${r.stage} · ${badge}`);
     await click('[data-act="back"]');
     await sleep(300);
   }
+  await js('Util.setClockOffset(0); true');
 
   // 설정: 저장 → 다시 불러와도 유지 → 적용
   await js('App.showSettings()');

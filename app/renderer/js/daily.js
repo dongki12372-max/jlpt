@@ -1,9 +1,12 @@
 // ============================================================
-// 오늘의 학습: 레벨마다 하루 분량을 정해 단어장·청해·문자어휘·문법을 골고루 하게 한다 (홈의 레벨 탭 아래 카드)
-//   분량: 문제는 영역별 문항 수 (settings.daily[레벨], 기본값 config.daily.questions, 0 = 빼기),
+// 오늘의 학습: 레벨마다 하루 분량을 정해 단어장·청해·문자어휘·문형·문법을 골고루 하게 한다 (홈의 레벨 탭 아래 카드)
+//   분량: 문제는 영역별 문항 수, 문형은 퀴즈로 볼 문형 수 (settings.daily[레벨], 기본값 config.daily.questions, 0 = 빼기),
 //         단어장은 그날의 복습 + 새 카드 (settings.daily[레벨].words = false면 빼기)
 //   진도는 따로 적지 않고 기록에서 센다 — 오늘(새벽 4시부터) 푼 그 레벨 문항 수. 유형별 연습·오답노트에서 푼 것도 들어간다.
-//   문항 고르기(pick): 유형마다 고르게. 오답노트 문항(reviewShare까지) → 안 푼 문항 → 오래전에 푼 문항. 오늘 푼 문항은 다시 내지 않는다.
+//         문형은 오늘 퀴즈로 본 문형 수 (문형 기록의 quizAt).
+//   복습은 분량 안에서 저절로 된다 — 고를 때(pick) 오늘 복습할 오답노트 문항(Util.isDue, 분량의 reviewShare까지)이 먼저,
+//         그다음 유형마다 고르게 안 푼 문항 → 오래전에 푼 문항. 복습 날이 아직 안 된 오답노트 문항은 맨 뒤, 오늘 푼 문항은 다시 내지 않는다.
+//         문형(pickPoints)도 오늘 복습할 약한 문형 → 처음 보는 문형 → 퀴즈로 본 지 오래된 문형.
 //   분량을 다 채운 날은 sections.plan.studyDays에 '{날짜} {레벨}'로 남긴다 (기기 간 합집합) → 연속 일수·최근 날 점
 // ============================================================
 const Daily = (() => {
@@ -12,17 +15,19 @@ const Daily = (() => {
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  // 단계: 단어장 + 문제 영역 (config.sectionOrder 순서)
+  // 단계: 단어장 + 문제 영역 (config.sectionOrder 순서), 문형 퀴즈는 문법 문제 앞
   const QUESTION_PARTS = {
     listening: { mod: () => Listening, run: (o) => Practice.run(o) },
     vocab: { mod: () => Vocab, run: (o) => VocabPractice.run(o) },
     grammar: { mod: () => Grammar, run: (o) => GrammarPractice.run(o) },
   };
-  const PARTS = ['words', ...window.APP_CONFIG.sectionOrder.filter((id) => id in QUESTION_PARTS)];
-  const label = (part) => (part === 'words' ? '단어장' : sections[part].label_ko);
-  const available = (part, level) => (part === 'words'
-    ? !!sections.vocab.enabled && Vocab.words(level).length > 0
-    : !!sections[part].enabled && QUESTION_PARTS[part].mod().questions(level).length > 0);
+  const PARTS = ['words', ...window.APP_CONFIG.sectionOrder.filter((id) => id in QUESTION_PARTS).flatMap((id) => (id === 'grammar' ? ['points', id] : [id]))];
+  const label = (part) => (part === 'words' ? '단어장' : part === 'points' ? '문형' : sections[part].label_ko);
+  const available = (part, level) => {
+    if (part === 'words') return !!sections.vocab.enabled && Vocab.words(level).length > 0;
+    if (part === 'points') return !!sections.grammar.enabled && Grammar.points(level).length > 0;
+    return !!sections[part].enabled && QUESTION_PARTS[part].mod().questions(level).length > 0;
+  };
 
   // ---------- 분량 (레벨마다) ----------
   const saved = (level) => Storage.getSetting('daily', level, {});
@@ -32,10 +37,23 @@ const Daily = (() => {
 
   // ---------- 오늘 진도 ----------
   const answeredToday = (mod, q, start) => Util.stamp(mod.record(q)) >= start;
+  const pointRec = (p) => Grammar.pointRecord(p.key);
+  const quizAt = (p) => (pointRec(p) || {}).quizAt || 0;   // 그 문형을 퀴즈로 마지막에 본 시각
+  // 남은 분량 중 복습으로 나올 수 → 「복습 N」
+  const reviewNote = (left, due) => (Math.min(left, due) ? `복습 ${Math.min(left, due)}` : '');
 
-  // { part, done, total, left, complete, note } — 단어장은 카드 장수, 문제는 문항 수
+  // { part, done, total, left, complete, unit, note } — 단어장은 카드 장수, 문제는 문항 수, 문형은 개수
   function partState(part, level, now) {
     const start = Srs.dayStart(now);
+    if (part === 'points') {
+      const rest = Grammar.points(level).filter((p) => quizAt(p) < start);
+      const all = Grammar.points(level).length;
+      const total = Math.min(amounts(level).points, all);
+      const n = all - rest.length;
+      const left = Math.max(0, total - n);
+      const due = rest.filter((p) => Util.isDue(pointRec(p), now)).length;
+      return { part, done: Math.min(n, total), total, left, complete: n >= total, unit: '개', note: reviewNote(left, due) };
+    }
     if (part === 'words') {
       const c = Vocab.todayCounts(level, now);
       const left = c.review + c.learning + c.fresh;
@@ -48,8 +66,11 @@ const Daily = (() => {
     const mod = QUESTION_PARTS[part].mod();
     const qs = mod.questions(level);
     const total = Math.min(amounts(level)[part], qs.length);
-    const n = qs.filter((q) => answeredToday(mod, q, start)).length;
-    return { part, done: Math.min(n, total), total, left: Math.max(0, total - n), complete: n >= total, unit: '문항', note: '' };
+    const rest = qs.filter((q) => !answeredToday(mod, q, start));
+    const n = qs.length - rest.length;
+    const left = Math.max(0, total - n);
+    const due = Math.min(rest.filter((q) => Util.isDue(mod.record(q), now)).length, Math.floor(total * cfg.reviewShare));
+    return { part, done: Math.min(n, total), total, left, complete: n >= total, unit: '문항', note: reviewNote(left, due) };
   }
   const plan = (level, now) => PARTS.filter((p) => planned(p, level)).map((p) => partState(p, level, now));
 
@@ -66,15 +87,18 @@ const Daily = (() => {
       const ofType = mod.questions(level).filter((q) => q.type === t);
       const rest = ofType.filter((q) => !answeredToday(mod, q, start));
       count[t] = ofType.length - rest.length;
-      // 안 푼 문항(문제 은행 순서) → 푼 지 오래된 문항
-      queue[t] = rest.map((q, i) => ({ q, i })).sort((a, b) => Util.stamp(rec(a.q)) - Util.stamp(rec(b.q)) || a.i - b.i).map((x) => x.q);
+      // 안 푼 문항(문제 은행 순서) → 푼 지 오래된 문항 → 복습 날이 아직 안 된 오답노트 문항 (그날 다시 나온다)
+      const waiting = (q) => ((rec(q) || {}).review && !Util.isDue(rec(q), now) ? 1 : 0);
+      queue[t] = rest.map((q, i) => ({ q, i }))
+        .sort((a, b) => waiting(a.q) - waiting(b.q) || Util.stamp(rec(a.q)) - Util.stamp(rec(b.q)) || a.i - b.i).map((x) => x.q);
     }
     const out = [];
     const take = (q) => { queue[q.type] = queue[q.type].filter((x) => x !== q); count[q.type] += 1; out.push(q); };
 
-    // 오답노트 문항 먼저 (틀린 지 오래된 것부터, 분량의 reviewShare까지)
-    const wrong = types.flatMap((t) => queue[t]).filter((q) => (rec(q) || {}).review).sort((a, b) => Util.stamp(rec(a)) - Util.stamp(rec(b)));
-    wrong.slice(0, Math.floor(n * cfg.reviewShare)).forEach(take);
+    // 오늘 복습할 오답노트 문항 먼저 (복습 날이 오래 지난 것부터, 분량의 reviewShare까지)
+    const due = types.flatMap((t) => queue[t]).filter((q) => Util.isDue(rec(q), now))
+      .sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0) || Util.stamp(rec(a)) - Util.stamp(rec(b)));
+    due.slice(0, Math.floor(n * cfg.reviewShare)).forEach(take);
 
     const unsolved = (t) => queue[t].filter((q) => !rec(q)).length;
     while (out.length < n) {
@@ -84,6 +108,15 @@ const Daily = (() => {
     }
     // 푸는 순서는 실전처럼 유형 순서대로
     return out.map((q, i) => ({ q, i })).sort((a, b) => types.indexOf(a.q.type) - types.indexOf(b.q.type) || a.i - b.i).map((x) => x.q);
+  }
+  // 오늘 퀴즈로 안 본 문형에서 n개: 오늘 복습할 약한 문형(복습 날이 오래 지난 것부터) → 기록 없는 문형(문형 사전 순서)
+  //   → 퀴즈로 본 지 오래된 문형 → 복습 날이 아직 안 된 약한 문형
+  function pickPoints(level, n, now = Util.now()) {
+    const start = Srs.dayStart(now);
+    const rank = (p) => { const r = pointRec(p); return Util.isDue(r, now) ? 0 : !r ? 1 : r.review ? 3 : 2; };
+    return Grammar.points(level).filter((p) => quizAt(p) < start).map((p, i) => ({ p, i, k: rank(p) }))
+      .sort((a, b) => a.k - b.k || (a.k === 0 ? (pointRec(a.p).due || 0) - (pointRec(b.p).due || 0) : quizAt(a.p) - quizAt(b.p)) || a.i - b.i)
+      .slice(0, n).map((x) => x.p);
   }
 
   // ---------- 다 채운 날 ----------
@@ -132,6 +165,11 @@ const Daily = (() => {
       if (st.left) Deck.study(level, { back: App.showHome, backLabel: '← 홈', next });
       return;
     }
+    if (part === 'points') {
+      const points = pickPoints(level, st.left, now);
+      if (points.length) GrammarQuiz.run(level, points, null, { title: '오늘의 학습 · 문형', back: App.showHome, backLabel: '← 홈', next });
+      return;
+    }
     const list = pick(part, level, st.left, now);
     if (!list.length) return;
     QUESTION_PARTS[part].run({
@@ -165,7 +203,7 @@ const Daily = (() => {
           <span class="mark">${s.complete ? '✓' : ''}</span>
           <span class="name">${Util.esc(label(s.part))}</span>
           <span class="note dim small">${s.note}</span>
-          <span class="count" data-el="daily-count">${s.done} / ${s.total}${s.unit === '장' ? '장' : ''}</span>
+          <span class="count" data-el="daily-count">${s.done} / ${s.total}${s.unit === '문항' ? '' : s.unit}</span>
         </button>
       </li>`).join('');
     return `
@@ -206,13 +244,14 @@ const Daily = (() => {
             </select>
           </label>`;
       }
-      const max = QUESTION_PARTS[p].mod().questions(level).length;
+      const isPoints = p === 'points';
+      const max = isPoints ? Grammar.points(level).length : QUESTION_PARTS[p].mod().questions(level).length;
       const opts = [...new Set([...cfg.questionOptions, a[p]])].sort((x, y) => x - y);
       return `
         <label class="row">
-          <span>${Util.esc(label(p))} <span class="dim small">문제 ${max}개 중</span></span>
+          <span>${Util.esc(label(p))} <span class="dim small">${isPoints ? `퀴즈 · 문형 ${max}개 중` : `문제 ${max}개 중`}</span></span>
           <select data-amount="${p}">
-            ${opts.map((n) => `<option value="${n}" ${n === a[p] ? 'selected' : ''}>${n ? `${n}문항` : '빼기'}</option>`).join('')}
+            ${opts.map((n) => `<option value="${n}" ${n === a[p] ? 'selected' : ''}>${n ? `${n}${isPoints ? '개' : '문항'}` : '빼기'}</option>`).join('')}
           </select>
         </label>`;
     }).join('');
@@ -227,8 +266,9 @@ const Daily = (() => {
         ${rows}
         <p class="dim small saved" data-el="saved"></p>
       </section>
-      <p class="dim small">분량은 레벨마다 따로 정합니다. 문제는 유형마다 고르게, 틀렸던 문항 → 안 푼 문항 → 오래전에 푼 문항 순서로 나옵니다.
-        유형별 연습이나 오답노트에서 푼 문항도 오늘 분량에 들어갑니다. 하루 새 카드 수(레벨마다 따로 셉니다)는 설정 → 문자·어휘에서 바꿉니다.</p>
+      <p class="dim small">분량은 레벨마다 따로 정합니다. 복습은 이 분량 안에서 저절로 됩니다 — 틀린 문항과 문형은 ${window.APP_CONFIG.reviewIntervalsDays.join('일 → ')}일 뒤에 다시 나오고,
+        그날 복습할 것이 먼저, 남은 자리에 안 푼 문항 → 오래전에 푼 문항이 유형마다 고르게 나옵니다. 틀린 문항의 단어는 단어장 복습에 들어갑니다.</p>
+      <p class="dim small">유형별 연습이나 오답노트에서 푼 문항도 오늘 분량에 들어갑니다. 하루 새 카드 수(레벨마다 따로 셉니다)는 설정 → 문자·어휘에서 바꿉니다.</p>
     `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
 
     $('[data-act="home"]').addEventListener('click', App.showHome);
@@ -239,5 +279,5 @@ const Daily = (() => {
     }));
   }
 
-  return { PARTS, amounts, setAmount, plan, pick, streak, start, homeHtml, bindHome, showSetup };
+  return { PARTS, amounts, setAmount, plan, pick, pickPoints, streak, start, homeHtml, bindHome, showSetup };
 })();

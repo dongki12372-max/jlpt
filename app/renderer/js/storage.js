@@ -2,7 +2,7 @@
 // 기록 저장 (영역 공통) — window.jlpt(web.js)가 이 브라우저의 localStorage에 쓴다.
 //   구조는 docs/DESIGN.md 2장:
 //   { version, settings: { common, {영역} }, sections: { {영역}: { items: {id: {...}}, exams: [...] } } }
-//   오답노트는 별도 목록이 아니라 items[id].review 플래그다.
+//   오답노트는 별도 목록이 아니라 items[id].review 플래그다 (복습 일정은 같은 기록의 stage·due).
 //   updatedAt = 마지막 저장 시각(ms). 기기 간 동기화(sync.js)는 merge()로 두 기록을 합친다.
 // ============================================================
 const Storage = (() => {
@@ -141,32 +141,46 @@ const Storage = (() => {
 
   const item = (sectionId, id) => section(sectionId).items[id] || null;
 
-  // 문항 하나를 푼 결과. 틀리면 오답노트에 넣고, 연속 정답이 reviewClearStreak 이상이면 뺀다.
-  function recordAnswer(sectionId, id, correct) {
+  // 문항 하나를 푼 결과. 틀리면 오답노트에 넣고 복습 일정을 처음으로 (stage 0, 복습 날 due = 첫 간격 뒤).
+  //   오답노트 문항은 복습 날이 된 뒤에 맞혀야 다음 간격으로 넘어가고 (그 전에 맞힌 것은 세지 않음), 마지막 간격까지 맞히면 빠진다.
+  //   간격은 config.reviewIntervalsDays, 날짜 경계는 단어장과 같다 (Srs.dayStart). extra = 기록에 같이 남길 필드
+  function recordAnswer(sectionId, id, correct, extra = null) {
+    const now = Util.now();
+    const days = window.APP_CONFIG.reviewIntervalsDays;
     const items = section(sectionId).items;
     const it = items[id] || { attempts: 0, lastCorrect: false, streak: 0, lastAt: null, review: false };
     it.attempts += 1;
     it.lastCorrect = !!correct;
     it.streak = correct ? it.streak + 1 : 0;
-    it.lastAt = new Date().toISOString();
-    it.at = Date.now();
+    it.lastAt = new Date(now).toISOString();
+    it.at = now;
     if (!correct) {
       it.review = true;
       it.reviewManual = false;
-    } else if (it.review && it.streak >= window.APP_CONFIG.reviewClearStreak) {
-      it.review = false;
+      it.stage = 0;
+      it.due = Srs.addDays(Srs.dayStart(now), days[0]);
+    } else if (it.review && (it.due || 0) <= now) {
+      it.stage = (it.stage || 0) + 1;
+      if (it.stage < days.length) it.due = Srs.addDays(Srs.dayStart(now), days[it.stage]);
+      else endReview(it);
     }
+    if (extra) Object.assign(it, extra);
     items[id] = it;
     save();
     return it;
+  }
+  function endReview(it) {
+    it.review = false;
+    delete it.stage;
+    delete it.due;
   }
 
   function removeFromReview(sectionId, id) {
     const it = item(sectionId, id);
     if (!it) return;
-    it.review = false;
+    endReview(it);
     it.reviewManual = true;
-    it.at = Date.now();
+    it.at = Util.now();
     save();
   }
 

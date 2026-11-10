@@ -1,18 +1,19 @@
 // ============================================================
 // 청해 · 오답노트: 틀린 문항(items[id].review)을 레벨·유형별로 모아 다시 풀기
-//   연속 reviewClearStreak번 맞히면 자동으로 빠지고, 목록에서 수동으로 뺄 수도 있다.
+//   복습 간격(config.reviewIntervalsDays)마다 다시 맞히면 자동으로 빠지고, 목록에서 수동으로 뺄 수도 있다.
+//   「오늘 복습」은 복습 날이 된 문항만, 「전체 다시 풀기」·「이 유형만 풀기」는 날짜와 상관없이 전부.
 // ============================================================
 const Review = (() => {
   const cfg = () => Listening.cfg;
-  const streakGoal = () => window.APP_CONFIG.reviewClearStreak;
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  let session = null;   // { level, list, idx, results: {id: {n, correct, cleared}} } — 건너뛴 문항은 없음
+  let session = null;   // { level, list, idx, results: {id: {n, correct, was}} } — 건너뛴 문항은 없음
 
   // ---------- 목록 ----------
   function show(level) {
     const list = Listening.reviewList(level);
+    const nDue = Listening.dueList(level).length;
     const groups = Listening.levelTypes(level).map((t) => {
       const qs = list.filter((q) => q.type === t);
       if (!qs.length) return '';
@@ -22,7 +23,7 @@ const Review = (() => {
         return `
           <li data-qid="${q.id}">
             <span class="qid">${q.id}</span>
-            <span class="dim">시도 ${r.attempts}회 · 연속 정답 ${r.streak}/${streakGoal()}</span>
+            <span class="dim">시도 ${r.attempts}회 · ${Util.reviewStatus(r)}</span>
             <button class="link danger" data-remove="${q.id}" title="오답노트에서 빼기">빼기</button>
           </li>`;
       }).join('');
@@ -43,19 +44,17 @@ const Review = (() => {
         <span class="pos">${list.length}문항</span>
       </div>
       ${list.length ? `
-        <div class="next-row left">
-          <button class="primary" data-act="start-all">전체 다시 풀기 <span class="kbd">Enter</span></button>
-          <span class="dim small">연속 ${streakGoal()}번 맞히면 오답노트에서 자동으로 빠집니다.</span>
-        </div>
+        ${Util.reviewButtons(nDue)}
         ${groups}` : `
         <section class="card empty"><p>오답노트가 비어 있습니다. 연습이나 실전 모의에서 틀린 문항이 여기에 모입니다.</p></section>`}
     `, { onKey: (e) => {
-      if (e.key === 'Enter' && list.length) { e.preventDefault(); start(level, null); } else if (e.key === 'Escape') App.showHome();
+      if (e.key === 'Enter' && list.length) { e.preventDefault(); start(level, null, nDue > 0); } else if (e.key === 'Escape') App.showHome();
     } });
 
     $('[data-act="home"]').addEventListener('click', App.showHome);
     if (!list.length) return;
-    $('[data-act="start-all"]').addEventListener('click', () => start(level, null));
+    $('[data-act="all"]').addEventListener('click', () => start(level, null));
+    if (nDue) $('[data-act="due"]').addEventListener('click', () => start(level, null, true));
     $$('[data-start-type]').forEach((b) => b.addEventListener('click', () => start(level, b.dataset.startType)));
     $$('[data-remove]').forEach((b) => b.addEventListener('click', () => {
       Storage.removeFromReview(Listening.SECTION, b.dataset.remove);
@@ -64,14 +63,14 @@ const Review = (() => {
   }
 
   // ---------- 다시 풀기 ----------
-  function start(level, type) {
+  function start(level, type, dueOnly = false) {
     // 유형 순서(실전 순서)대로
     const order = Listening.levelTypes(level);
-    const list = Listening.reviewList(level)
+    const list = (dueOnly ? Listening.dueList(level) : Listening.reviewList(level))
       .filter((q) => !type || q.type === type)
       .sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
     if (!list.length) { show(level); return; }
-    session = { level, list, idx: 0, results: {} };   // results: {id: {n, correct, cleared}}
+    session = { level, list, idx: 0, results: {} };
     showQuestion();
   }
 
@@ -92,7 +91,7 @@ const Review = (() => {
       autoplay: !done,
       onAnswer: (n, correct) => {
         const r = Listening.recordAnswer(q, correct);
-        session.results[q.id] = { n, correct, cleared: !r.review };
+        session.results[q.id] = { n, correct, was: true, cleared: !r.review };
       },
       nextLabel: last ? '결과 보기' : '다음 문제',
       onNext: next,
@@ -106,7 +105,7 @@ const Review = (() => {
     const cleared = Object.values(results).filter((r) => r.cleared).length;
     const rows = list.map((q, i) => {
       const r = results[q.id];
-      return Util.resultRow(r, `${i + 1}. ${q.id}${r && r.cleared ? ' <span class="badge ok">빠짐</span>' : ''}`);
+      return Util.resultRow(r, `${i + 1}. ${q.id}${Util.reviewBadge(r, Listening.record(q))}`);
     }).join('');
 
     App.setScreen(`

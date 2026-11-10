@@ -76,7 +76,7 @@ const Practice = (() => {
       answered: done ? done.n : undefined,
       autoplay: !done,
       onAnswer: (n, correct) => {
-        session.results[q.id] = { n, correct };
+        session.results[q.id] = { n, correct, was: !!(Listening.record(q) || {}).review };
         Listening.recordAnswer(q, correct);
       },
       nextLabel: last ? '결과 보기' : '다음 문제',
@@ -98,7 +98,8 @@ const Practice = (() => {
   // ---------- 결과 ----------
   function showDone() {
     const { results, list, level, title, back, backLabel, again, againLabel } = session;
-    const rows = list.map((q, i) => Util.resultRow(results[q.id], `${i + 1}. ${q.id}`)).join('');
+    const rows = list.map((q, i) => Util.resultRow(results[q.id], `${i + 1}. ${q.id}${Util.reviewBadge(results[q.id], Listening.record(q))}`)).join('');
+    const pulled = list.some((q) => results[q.id] && !results[q.id].correct && q.vocab.some((v) => v.kind === 'word'));
 
     App.setScreen(`
       <div class="topbar">
@@ -107,6 +108,7 @@ const Practice = (() => {
       </div>
       <section class="card done">
         ${Util.resultHead(list, results)}
+        ${pulled ? '<p class="dim">틀린 문항의 핵심 단어를 단어장 오늘 복습에 넣었습니다.</p>' : ''}
         <ul class="result-list">${rows}</ul>
         <div class="next-row">
           <button class="secondary" data-act="back">${Util.esc(backLabel.replace(/^← /, ''))}</button>
