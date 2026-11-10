@@ -31,6 +31,7 @@ JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습�
 주소: **https://dongki12372-max.github.io/jlpt/** (폰은 브라우저 메뉴의 「홈 화면에 추가」로 앱처럼 열 수 있습니다)
 
 - 폰(폴드 접은 화면 포함)과 펼친 화면·컴퓨터 화면에 맞춰 레이아웃이 바뀝니다.
+- **오늘의 학습** (홈의 레벨 탭 아래): 레벨마다 하루 분량을 정해 단어장 → 청해 → 문자·어휘 → 문법을 골고루 합니다. 기본은 단어장(그날 복습 + 새 카드) · 청해 5 · 문자·어휘 10 · 문법 5문항이고, 「분량 바꾸기」에서 레벨마다 바꾸거나 뺄 수 있습니다 (`app/config.js`의 `daily`). 문제는 유형마다 고르게, 틀렸던 문항(절반까지) → 안 푼 문항 → 오래전에 푼 문항 순서로 나오고, 유형별 연습·오답노트에서 푼 문항도 오늘 분량에 들어갑니다. 한 단계를 끝내면 「다음」 버튼으로 이어지고, 다 채운 날은 초록 점과 연속 일수로 남습니다 (하루의 경계는 새벽 4시). 하루 새 카드 수는 레벨마다 따로 셉니다.
 - 유형별 연습 순서 **「이어서」**(기본): 그 유형에서 마지막으로 푼 문항 다음부터 시작하고, 끝까지 가면 앞 문항이 이어집니다 (유형 카드에 「다음 N번부터」). 「처음부터」「무작위」도 고를 수 있고, 동기화를 켜면 다른 기기에서 푼 것도 반영됩니다.
 - 연습·오답노트·퀴즈의 선택지 아래 **「모름」**(키 `0`): 모르는 문항은 찍지 말고 누르면 오답으로 기록되고(오답노트·약한 문형·단어장 복습) 정답과 해설이 나옵니다. 실전 모의에는 없고, 비워 두면 무응답입니다.
 - **기기 간 동기화**: 설정 → 기기 간 동기화 → 「동기화 켜기」로 20자 코드를 만들고, 다른 기기(폰·다른 브라우저)에서 그 코드를 넣으면 기록이 자동으로 합쳐집니다 (계정 없음, Firebase Firestore 프로젝트 `jlptn3-ec3e8`, `app/config.js`의 `sync`, 코드는 `js/sync.js`). 같은 문항·카드는 나중에 바뀐 기록이 남고, 인터넷이 없을 때는 그 기기에 저장했다가 연결되면 맞춥니다. Firestore 규칙은 `sync/{20자 이상 코드}` 경로만 읽기·쓰기 허용.
@@ -48,7 +49,7 @@ npm install                                   # Electron (자동 테스트용 �
 python3 -m venv .venv
 .venv/bin/pip install -r tools/requirements.txt   # edge-tts, pydub, jsonschema
 npm start                                     # 로컬에서 열기 (http://127.0.0.1:8000/…, tools/serve.js)
-npm run smoke                                 # 스모크 테스트 (smoke:listening·vocab·grammar — tools/test_host.js가 웹 앱을 Electron 창으로 띄움)
+npm run smoke                                 # 스모크 테스트 (smoke:listening·vocab·grammar·daily — tools/test_host.js가 웹 앱을 Electron 창으로 띄움)
 npm run web:check                             # 폰·폴드 화면 폭, 기록 저장·가져오기, 동기화(가짜 서버)
 ```
 
@@ -108,7 +109,7 @@ npm run web:check                             # 폰·폴드 화면 폭, 기록 �
 
 ```
 app/            웹 앱 (config.js · renderer/)
-  renderer/js/          공통: app.js(홈·화면 전환) player.js storage.js util.js dict.js web.js(데이터·기록 읽기) sync.js(기기 간 동기화)
+  renderer/js/          공통: app.js(홈·화면 전환) daily.js(오늘의 학습) player.js storage.js util.js dict.js web.js(데이터·기록 읽기) sync.js(기기 간 동기화)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
   renderer/js/vocab/     문자·어휘: index.js srs.js deck.js quiz.js question-view.js practice.js exam.js
   renderer/js/grammar/   문법: index.js points.js(문형 사전·퀴즈) question-view.js practice.js exam.js
@@ -116,7 +117,7 @@ data/listening/ 청해 문제 은행·스키마·지시문·그림
 data/vocab/     단어·문제·스키마
 data/grammar/   문형·문제·스키마
 audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/, grammar/{examples,questions}/
-tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js web_check.js deploy_web.sh
+tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js smoke_daily.js web_check.js deploy_web.sh
                 validate_grammar.py merge_grammar.py build_grammar_audio.py check_grammar_tts.py grammar_common.py smoke_grammar.js
                 validate_vocab.py build_vocab_audio.py check_vocab_tts.py merge_words.py merge_questions.py
                 import_listening_vocab.py vocab_common.py smoke_vocab.js

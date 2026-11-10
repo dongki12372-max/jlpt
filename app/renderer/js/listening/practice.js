@@ -1,8 +1,8 @@
 // ============================================================
-// 청해 · 유형별 연습: 유형 선택 → 문항 풀이(QuestionView) → 결과
+// 청해 · 유형별 연습: 유형 선택 → 문항 풀이(QuestionView) → 결과 (run은 오늘의 학습도 쓴다)
 // ============================================================
 const Practice = (() => {
-  let session = null;   // { level, type, list, idx, results: {id: {n, correct}} } — 건너뛴 문항은 results에 없음
+  let session = null;   // { level, list, idx, results: {id: {n, correct}}, title, back, … } — 건너뛴 문항은 results에 없음
 
   const cfg = () => Listening.cfg;
   const prefs = () => Listening.prefs;
@@ -49,12 +49,16 @@ const Practice = (() => {
     let list = Util.orderList(Listening.questions(level).filter((q) => q.type === type), prefs().order, Listening.record);
     // 안 푼 문항 우선: 순서(이어서/처음부터/무작위)는 유지한 채 안 푼 문항을 앞으로
     if (prefs().unsolvedFirst) list = [...list.filter((q) => !Listening.record(q)), ...list.filter((q) => Listening.record(q))];
-    session = {
-      level, type,
-      list,
-      idx: 0,
-      results: {},
-    };
+    const tc = cfg().types[type];
+    run({
+      level, list, title: `<span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`,
+      back: () => showSetup(level), backLabel: '← 유형 선택', again: () => start(level, type),
+    });
+  }
+
+  // 문항 목록을 차례로 푼다 (유형별 연습·오늘의 학습 공용). title은 HTML, again이 있으면 결과 화면에 그 버튼(againLabel)
+  function run({ level, list, title, back, backLabel = '← 뒤로', again = null, againLabel = '다시 풀기' }) {
+    session = { level, list, idx: 0, results: {}, title, back, backLabel, again, againLabel };
     showQuestion();
   }
 
@@ -67,8 +71,8 @@ const Practice = (() => {
     QuestionView.show(q, {
       crumb: `${q.level} · <span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`,
       pos: `${session.idx + 1} / ${session.list.length}`,
-      backLabel: '← 유형 선택',
-      onBack: () => showSetup(session.level),
+      backLabel: session.backLabel,
+      onBack: session.back,
       answered: done ? done.n : undefined,
       autoplay: !done,
       onAnswer: (n, correct) => {
@@ -93,28 +97,27 @@ const Practice = (() => {
 
   // ---------- 결과 ----------
   function showDone() {
-    const { results, list, level, type } = session;
-    const tc = cfg().types[type];
+    const { results, list, level, title, back, backLabel, again, againLabel } = session;
     const rows = list.map((q, i) => Util.resultRow(results[q.id], `${i + 1}. ${q.id}`)).join('');
 
     App.setScreen(`
       <div class="topbar">
-        <button class="link" data-act="back">← 유형 선택</button>
-        <span class="crumb">${level} · <span lang="ja">${tc.label_ja}</span> ${tc.label_ko}</span>
+        <button class="link" data-act="back">${Util.esc(backLabel)}</button>
+        <span class="crumb">${level} · ${title}</span>
       </div>
       <section class="card done">
         ${Util.resultHead(list, results)}
         <ul class="result-list">${rows}</ul>
         <div class="next-row">
-          <button class="secondary" data-act="back">유형 선택</button>
-          <button class="primary" data-act="again">다시 풀기</button>
+          <button class="secondary" data-act="back">${Util.esc(backLabel.replace(/^← /, ''))}</button>
+          ${again ? `<button class="primary" data-act="again">${Util.esc(againLabel)}</button>` : ''}
         </div>
       </section>
-    `, { onKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); start(level, type); } else if (e.key === 'Escape') showSetup(level); } });
+    `, { onKey: (e) => { if (e.key === 'Enter' && again) { e.preventDefault(); again(); } else if (e.key === 'Escape') back(); } });
 
-    $$('[data-act="back"]').forEach((b) => b.addEventListener('click', () => showSetup(level)));
-    $('[data-act="again"]').addEventListener('click', () => start(level, type));
+    $$('[data-act="back"]').forEach((b) => b.addEventListener('click', back));
+    if (again) $('[data-act="again"]').addEventListener('click', again);
   }
 
-  return { showSetup };
+  return { showSetup, run };
 })();

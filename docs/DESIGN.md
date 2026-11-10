@@ -16,7 +16,7 @@
 
 **새 영역을 켜는 순서**: `data/{영역}/` 데이터 → `web.js`에 로더 → `js/{영역}/index.js`에서 등록 → `index.html`에 스크립트 추가 → `config.sections.{영역}.enabled = true`.
 
-홈 화면은 영역 탭 → 레벨 탭(N5·N4·N3) → 그 영역의 모드 버튼 → 영역 요약 순서다. `enabled=false`이거나 모듈이 없는 영역은 탭에 '준비 중'으로 비활성 표시된다.
+홈 화면은 영역 탭 → 레벨 탭(N5·N4·N3) → 오늘의 학습(그 레벨, 전 영역 공통 — `js/daily.js`) → 그 영역의 모드 버튼 → 영역 요약 순서다. `enabled=false`이거나 모듈이 없는 영역은 탭에 '준비 중'으로 비활성 표시된다.
 
 ## 2. progress.json (Phase 4·5에서 구현)
 
@@ -65,6 +65,7 @@
 - **settings**: `common`은 전 영역 공통(후리가나 표시 등), 나머지는 영역 키 아래에 둔다. 청해는 `playbackRate`(연습 기본 속도), `answerSeconds`, `order`(seq/random), `unsolvedFirst`.
 - 실전 모의의 답도 `items`에 기록한다(무응답은 오답). 저장은 임시 파일에 쓴 뒤 바꿔 넣고, 깨진 파일은 `progress.json.broken-<시각>`으로 보관한 뒤 빈 기록으로 시작한다.
 - 테스트는 `JLPT_USER_DATA` 환경 변수로 저장 위치를 바꿔 실제 기록을 건드리지 않는다.
+- **오늘의 학습** (`js/daily.js`): 진도는 따로 저장하지 않고 `items[*].at`(문항)·카드의 `at`·`due`(단어장)에서 오늘(새벽 4시부터) 한 양을 센다. 저장하는 것은 두 가지뿐이다 — 레벨별 분량 `settings.daily.{N5|N4|N3} = { words, listening, vocab, grammar }`(없으면 `config.daily`), 분량을 다 채운 날 `sections.plan.studyDays = ['YYYY-MM-DD N5', …]`(영역이 아닌 기록용 키, 기기 간 합집합). 단어장의 하루 새 카드 수는 `sections.vocab.daily.byLevel`로 단어 레벨마다 센다.
 - 영역 키가 없으면 빈 기록으로 본다. 그래서 새 영역을 추가할 때 마이그레이션이 필요 없다. 구조를 바꿀 때만 `version`을 올린다.
 
 ## 3. 단어 데이터 형식 (청해 vocab → 단어장)

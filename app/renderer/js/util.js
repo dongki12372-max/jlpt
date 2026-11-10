@@ -75,8 +75,8 @@ const Util = (() => {
     : answered === 0 ? `${blank} — 정답은 ${answer}번` : `오답입니다 — 정답은 ${answer}번`);
 
   // 유형별 연습 「이어서」: 지난번에 마지막으로 푼 문항(기록 at, 없으면 lastAt) 다음 자리. 다 돌면 처음으로 (기록 없으면 0)
+  const stamp = (r) => (r ? r.at || Date.parse(r.lastAt || '') || 0 : 0);   // 기록이 마지막으로 바뀐 시각 (ms, 없으면 0)
   const resumeIndex = (list, recordOf) => {
-    const stamp = (r) => (r ? r.at || Date.parse(r.lastAt || '') || 0 : 0);
     let last = -1;
     let best = 0;
     list.forEach((q, i) => { const s = stamp(recordOf(q)); if (s > best) { best = s; last = i; } });
@@ -102,6 +102,6 @@ const Util = (() => {
 
   return {
     esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText,
-    resumeIndex, orderList, orderButtons, resumeNote,
+    stamp, resumeIndex, orderList, orderButtons, resumeNote,
   };
 })();

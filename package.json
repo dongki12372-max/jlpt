@@ -6,10 +6,11 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "node tools/serve.js",
-    "smoke": "npm run -s smoke:listening && npm run -s smoke:vocab && npm run -s smoke:grammar",
+    "smoke": "npm run -s smoke:listening && npm run -s smoke:vocab && npm run -s smoke:grammar && npm run -s smoke:daily",
     "smoke:listening": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_app.js",
     "smoke:vocab": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_vocab.js",
     "smoke:grammar": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_grammar.js",
+    "smoke:daily": "env -u ELECTRON_RUN_AS_NODE electron tools/smoke_daily.js",
     "web:check": "env -u ELECTRON_RUN_AS_NODE electron tools/web_check.js",
     "web:deploy": "sh tools/deploy_web.sh"
   },

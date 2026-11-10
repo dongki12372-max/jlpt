@@ -53,8 +53,8 @@ const VocabPractice = (() => {
     }));
   }
 
-  // 문항 목록을 차례로 푼다 (연습·오답노트 공용)
-  function run({ level, list, title, back, again, review = false }) {
+  // 문항 목록을 차례로 푼다 (연습·오답노트·오늘의 학습 공용)
+  function run({ level, list, title, back, again, review = false, backLabel = null, againLabel = '다시 풀기' }) {
     session = { list, idx: 0, results: {} };   // results: {id: {n, correct}} — 건너뛴 문항은 없음
     showQuestion();
 
@@ -69,7 +69,7 @@ const VocabPractice = (() => {
       VocabQuestionView.show(q, {
         crumb: `${level} · ${review ? '오답노트' : `<span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`}`,
         pos: `${session.idx + 1} / ${session.list.length}`,
-        backLabel: review ? '← 오답노트' : '← 유형 선택',
+        backLabel: backLabel || (review ? '← 오답노트' : '← 유형 선택'),
         onBack: back,
         answered: done ? done.n : undefined,
         onAnswer: (n, correct) => {
@@ -102,7 +102,7 @@ const VocabPractice = (() => {
           <ul class="result-list">${rows}</ul>
           <div class="next-row">
             <button class="secondary" data-act="back">뒤로</button>
-            ${again ? '<button class="primary" data-act="again">다시 풀기</button>' : ''}
+            ${again ? `<button class="primary" data-act="again">${Util.esc(againLabel)}</button>` : ''}
           </div>
         </section>
       `, { onKey: (e) => { if (e.key === 'Escape') back(); else if (e.key === 'Enter' && again) { e.preventDefault(); again(); } } });

@@ -62,7 +62,10 @@ const Deck = (() => {
   const countWeak = (level) => Vocab.scopeWords(level).filter((w) => Vocab.wordState(w) === 'weak').length;
 
   // ---------- 카드 학습 ----------
-  function study(level) {
+  //   opts (오늘의 학습에서 열 때): back·backLabel = 돌아갈 곳, next = { label, go } 끝난 화면의 다음 단계 버튼
+  function study(level, opts = {}) {
+    const back = opts.back || (() => showHome(level));
+    const backLabel = opts.backLabel || '← 단어장';
     let done = 0;
     next();
 
@@ -78,17 +81,21 @@ const Deck = (() => {
       const later = Vocab.dueCards(level, Srs.addDays(Srs.dayStart(now), 1) - 1).filter((x) => x.c.state !== 'review');
       App.setScreen(`
         <div class="topbar">
-          <button class="link" data-act="back">← 단어장</button>
+          <button class="link" data-act="back">${Util.esc(backLabel)}</button>
           <span class="crumb">${level} · 단어장</span>
         </div>
         <section class="card done" data-el="deck-done">
           <h2>오늘 학습 끝</h2>
           <p>이번에 ${done}장을 봤습니다.</p>
           ${later.length ? `<p class="dim">학습 단계 카드 ${later.length}장이 조금 뒤에 다시 나옵니다. 나중에 다시 열어 주세요.</p>` : ''}
-          <div class="next-row"><button class="primary" data-act="back">단어장으로</button></div>
+          <div class="next-row">
+            <button class="${opts.next ? 'secondary' : 'primary'}" data-act="back">${Util.esc(backLabel.replace(/^← /, ''))}으로</button>
+            ${opts.next ? `<button class="primary" data-act="next">${Util.esc(opts.next.label)}</button>` : ''}
+          </div>
         </section>
-      `, { onKey: (e) => { if (e.key === 'Escape' || e.key === 'Enter') showHome(level); } });
-      $$('[data-act="back"]').forEach((b) => b.addEventListener('click', () => showHome(level)));
+      `, { onKey: (e) => { if (e.key === 'Enter' && opts.next) { e.preventDefault(); opts.next.go(); } else if (e.key === 'Escape' || e.key === 'Enter') back(); } });
+      $$('[data-act="back"]').forEach((b) => b.addEventListener('click', back));
+      if (opts.next) $('[data-act="next"]').addEventListener('click', opts.next.go);
     }
 
     function showCard({ id, isNew }, now) {
@@ -105,7 +112,7 @@ const Deck = (() => {
 
       App.setScreen(`
         <div class="topbar">
-          <button class="link" data-act="back">← 단어장</button>
+          <button class="link" data-act="back">${Util.esc(backLabel)}</button>
           <span class="crumb">${level} · 단어장</span>
           <span class="pos"><span class="cnt-new">${c.fresh}</span> · <span class="cnt-learn">${c.learning}</span> · <span class="cnt-review">${c.review}</span></span>
         </div>
@@ -127,7 +134,7 @@ const Deck = (() => {
         </div>
       `, { onKey });
 
-      $('[data-act="back"]').addEventListener('click', () => showHome(level));
+      $('[data-act="back"]').addEventListener('click', back);
       $('[data-act="flip"]').addEventListener('click', flip);
       $('[data-act="word-audio"]').addEventListener('click', () => Clip.play(Vocab.wordAudio(w)));
       bindExample(w);
@@ -153,7 +160,7 @@ const Deck = (() => {
         if (e.key === ' ') { e.preventDefault(); flip(); }
         else if (/^[1-4]$/.test(e.key)) rate(Number(e.key));
         else if (e.key === 'r' || e.key === 'R') { if (kind === 'meaning' || flipped) Clip.play(Vocab.wordAudio(w)); }
-        else if (e.key === 'Escape') showHome(level);
+        else if (e.key === 'Escape') back();
       }
     }
   }

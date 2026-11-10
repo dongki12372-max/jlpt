@@ -1,5 +1,5 @@
 // ============================================================
-// 앱 뼈대: 화면 전환, 키보드 라우팅, 홈(영역 → 레벨 → 모드)
+// 앱 뼈대: 화면 전환, 키보드 라우팅, 홈(영역 → 레벨 → 오늘의 학습(js/daily.js) → 모드)
 //   영역 모듈은 App.registerSection(id, module)로 등록한다 (js/{영역}/index.js).
 //   module = {
 //     load():            영역 데이터 읽기 (Promise)
@@ -82,12 +82,15 @@ const App = (() => {
         ${LEVELS.map((l) => `<button class="tab ${l === level ? 'active' : ''}" data-level="${l}">${cfg.levels[l].label}</button>`).join('')}
       </nav>
 
+      ${Daily.homeHtml(level)}
+
       <section class="modes">${modes}</section>
 
       ${mod.summary(level)}
     `);
 
     screen = 'home';
+    Daily.bindHome(root(), level);
     root().querySelector('[data-act="settings"]').addEventListener('click', showSettings);
     root().querySelectorAll('[data-section]:not(:disabled)').forEach((b) =>
       b.addEventListener('click', () => { state.section = b.dataset.section; showHome(); }));
