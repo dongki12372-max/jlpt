@@ -59,6 +59,7 @@ const GrammarPractice = (() => {
       const tc = cfg().types[q.type];
       const last = session.idx === session.list.length - 1;
       const done = session.results[q.id];
+      const was = !!(Grammar.record(q) || {}).review;   // 풀기 전에 오답노트에 있었는지
       const next = () => {
         if (session.idx < session.list.length - 1) { session.idx += 1; showQuestion(); } else showDone();
       };
@@ -75,11 +76,11 @@ const GrammarPractice = (() => {
             Grammar.recordAnswer(q, i, correct);
             if (partial.every((a) => a !== 0)) {   // -1 = 모름
               const right = partial.filter((a, k) => a === q.items[k].answer).length;
-              session.results[q.id] = { n: partial.slice(), correct: right === q.items.length, right };
+              session.results[q.id] = { n: partial.slice(), correct: right === q.items.length, right, was };
             }
           }
           : (n, correct) => {
-            session.results[q.id] = { n, correct };
+            session.results[q.id] = { n, correct, was };
             Grammar.recordAnswer(q, null, correct);
           },
         nextLabel: last ? '결과 보기' : '다음 문제',
@@ -93,9 +94,8 @@ const GrammarPractice = (() => {
       const { results } = session;
       const rows = list.map((q, i) => {
         const r = results[q.id];
-        const cleared = review && r && r.correct && !(Grammar.record(q) || {}).review;
         const part = q.type === 'bunshou' && r ? ` <span class="dim small">${r.right} / ${q.items.length}</span>` : '';
-        return Util.resultRow(r, `${i + 1}. <span lang="ja">${Util.esc(preview(q))}</span>${part}${cleared ? ' <span class="badge ok">오답노트에서 빠짐</span>' : ''}`);
+        return Util.resultRow(r, `${i + 1}. <span lang="ja">${Util.esc(preview(q))}</span>${part}${Util.reviewBadge(r, Grammar.record(q))}`);
       }).join('');
       App.setScreen(`
         <div class="topbar">
@@ -120,7 +120,7 @@ const GrammarPractice = (() => {
 })();
 
 // ============================================================
-// 문법 · 오답노트: 형식별 틀린 문항, 다시 풀기, 수동 빼기 (연속 2번 맞히면 자동으로 빠짐)
+// 문법 · 오답노트: 형식별 틀린 문항, 다시 풀기, 수동 빼기 (복습 간격마다 다시 맞히면 자동으로 빠짐)
 // ============================================================
 const GrammarReview = (() => {
   const $ = (sel) => document.querySelector(sel);
@@ -128,12 +128,13 @@ const GrammarReview = (() => {
 
   function show(level) {
     const list = Grammar.reviewList(level);
+    const due = Grammar.dueList(level);
     const groups = Grammar.levelTypes(level).map((t) => {
       const items = list.filter((q) => q.type === t);
       if (!items.length) return '';
       const tc = Grammar.cfg.types[t];
       const rows = items.map((q) => `<li><span lang="ja">${Util.esc(GrammarPractice.preview(q))}</span>
-          <span class="dim small">${q.id}</span>
+          <span class="dim small">${q.id} · ${Util.reviewStatus(Grammar.record(q))}</span>
           <button class="link danger small" data-remove="${q.id}">빼기</button></li>`).join('');
       return `<section class="card"><h3><span lang="ja">${tc.label_ja}</span> ${tc.label_ko} · ${items.length}문항
         <button class="secondary small-btn" data-type="${t}">이 형식만 풀기</button></h3><ul class="review-list">${rows}</ul></section>`;
@@ -145,15 +146,18 @@ const GrammarReview = (() => {
         <span class="crumb">${level} · 문법 · 오답노트</span>
       </div>
       ${list.length ? `
-        <p>${list.length}문항 · 연속 ${window.APP_CONFIG.reviewClearStreak}번 맞히면 자동으로 빠집니다.</p>
-        <button class="primary" data-act="all">전체 다시 풀기</button>
+        <p>${list.length}문항</p>
+        ${Util.reviewButtons(due.length)}
         ${groups}` : '<section class="card"><p>틀린 문항이 없습니다.</p></section>'}
-    `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
+    `, { onKey: (e) => {
+      if (e.key === 'Escape') App.showHome(); else if (e.key === 'Enter' && list.length) { e.preventDefault(); start(due.length ? due : list); }
+    } });
 
     $('[data-act="home"]').addEventListener('click', App.showHome);
     const order = (qs) => Grammar.levelTypes(level).flatMap((t) => qs.filter((q) => q.type === t));
     const start = (qs) => GrammarPractice.run({ level, list: order(qs), title: '오답노트', back: () => show(level), review: true });
     if (list.length) $('[data-act="all"]').addEventListener('click', () => start(list));
+    if (due.length) $('[data-act="due"]').addEventListener('click', () => start(due));
     $$('[data-type]').forEach((b) => b.addEventListener('click', () => start(list.filter((q) => q.type === b.dataset.type))));
     $$('[data-remove]').forEach((b) => b.addEventListener('click', () => {
       const q = Grammar.question(b.dataset.remove);

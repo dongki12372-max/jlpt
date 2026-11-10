@@ -231,6 +231,7 @@ const Vocab = (() => {
   const levelTypes = (level) => cfg.typeOrder.filter((t) => t in cfg.levels[level].exam);
   const record = (q) => Storage.item(SECTION, q.id);
   const reviewList = (level) => questions(level).filter((q) => (record(q) || {}).review);
+  const dueList = (level, now = Util.now()) => reviewList(level).filter((q) => Util.isDue(record(q), now));   // 오늘 복습할 오답노트 문항
   const exams = (level) => Storage.section(SECTION).exams.filter((e) => e.level === level);
 
   // ---------- 홈 ----------
@@ -243,7 +244,7 @@ const Vocab = (() => {
       { id: 'deck', title: '단어장', desc: `오늘 복습 ${c.review + c.learning} · 새 카드 ${c.fresh}`, enabled: words(level).length > 0, open: () => Deck.showHome(level) },
       { id: 'practice', title: '유형별 연습', desc: hasQ ? '유형을 골라 풀고 바로 해설 확인' : '준비 중', enabled: hasQ, open: () => VocabPractice.showSetup(level) },
       { id: 'exam', title: '실전 모의', desc: hasQ ? `${cfg.levels[level].examMinutes}분 · 자유 이동·제출` : '준비 중', enabled: hasQ, open: () => VocabExam.showStart(level) },
-      { id: 'review', title: '오답노트', desc: !hasQ ? '준비 중' : nReview ? `${nReview}문항 · 연속 ${window.APP_CONFIG.reviewClearStreak}번 맞히면 빠짐` : '틀린 문항이 없습니다', enabled: hasQ, open: () => VocabReview.show(level) },
+      { id: 'review', title: '오답노트', desc: !hasQ ? '준비 중' : Util.reviewDesc(nReview, dueList(level, now).length), enabled: hasQ, open: () => VocabReview.show(level) },
     ];
   }
 
@@ -315,7 +316,7 @@ const Vocab = (() => {
     SECTION, cfg, prefs, LEVELS, words, word, scopeLevels, scopeWords, hasKanji, wordAudio, exampleAudio, audioUrl, hasAudio,
     cardIds, splitCard, card, store, newCandidates, dueCards, nextCard, todayCounts, answerCard, pullWords, quizAnswer, quizRecord,
     wordState, STATE_LABEL, streak, newRemaining,
-    questions, levelTypes, record, reviewList, exams,
+    questions, levelTypes, record, reviewList, dueList, exams,
     get data() { return data; },
   };
 })();

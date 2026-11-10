@@ -73,7 +73,7 @@ const VocabPractice = (() => {
         onBack: back,
         answered: done ? done.n : undefined,
         onAnswer: (n, correct) => {
-          session.results[q.id] = { n, correct };
+          session.results[q.id] = { n, correct, was: !!(Vocab.record(q) || {}).review };
           record(q, correct);
         },
         nextLabel: last ? '결과 보기' : '다음 문제',
@@ -85,11 +85,7 @@ const VocabPractice = (() => {
 
     function showDone() {
       const { results } = session;
-      const rows = list.map((q, i) => {
-        const r = results[q.id];
-        const cleared = review && r && r.correct && !(Vocab.record(q) || {}).review;
-        return Util.resultRow(r, `${i + 1}. ${q.id}${cleared ? ' <span class="badge ok">오답노트에서 빠짐</span>' : ''}`);
-      }).join('');
+      const rows = list.map((q, i) => Util.resultRow(results[q.id], `${i + 1}. ${q.id}${Util.reviewBadge(results[q.id], Vocab.record(q))}`)).join('');
       const pulled = Object.values(results).filter((r) => !r.correct).length;
       App.setScreen(`
         <div class="topbar">
@@ -115,7 +111,7 @@ const VocabPractice = (() => {
 })();
 
 // ============================================================
-// 문자·어휘 · 오답노트: 레벨·유형별 틀린 문항, 다시 풀기, 수동 빼기 (연속 2번 맞히면 자동으로 빠짐)
+// 문자·어휘 · 오답노트: 레벨·유형별 틀린 문항, 다시 풀기, 수동 빼기 (복습 간격마다 다시 맞히면 자동으로 빠짐)
 // ============================================================
 const VocabReview = (() => {
   const $ = (sel) => document.querySelector(sel);
@@ -123,6 +119,7 @@ const VocabReview = (() => {
 
   function show(level) {
     const list = Vocab.reviewList(level);
+    const due = Vocab.dueList(level);
     const groups = Vocab.levelTypes(level).map((t) => {
       const items = list.filter((q) => q.type === t);
       if (!items.length) return '';
@@ -130,7 +127,7 @@ const VocabReview = (() => {
       const rows = items.map((q) => {
         const r = Vocab.record(q);
         return `<li><span lang="ja">${Util.esc(q.type === 'youhou' ? q.word : q.stem.replace(/\[\[|\]\]/g, ''))}</span>
-          <span class="dim small">${q.id} · 연속 정답 ${r.streak}</span>
+          <span class="dim small">${q.id} · ${Util.reviewStatus(r)}</span>
           <button class="link danger small" data-remove="${q.id}">빼기</button></li>`;
       }).join('');
       return `<section class="card"><h3><span lang="ja">${tc.label_ja}</span> ${tc.label_ko} · ${items.length}문항
@@ -143,15 +140,18 @@ const VocabReview = (() => {
         <span class="crumb">${level} · 문자·어휘 · 오답노트</span>
       </div>
       ${list.length ? `
-        <p>${list.length}문항 · 연속 ${window.APP_CONFIG.reviewClearStreak}번 맞히면 자동으로 빠집니다.</p>
-        <button class="primary" data-act="all">전체 다시 풀기</button>
+        <p>${list.length}문항</p>
+        ${Util.reviewButtons(due.length)}
         ${groups}` : '<section class="card"><p>틀린 문항이 없습니다.</p></section>'}
-    `, { onKey: (e) => { if (e.key === 'Escape') App.showHome(); } });
+    `, { onKey: (e) => {
+      if (e.key === 'Escape') App.showHome(); else if (e.key === 'Enter' && list.length) { e.preventDefault(); start(due.length ? due : list); }
+    } });
 
     $('[data-act="home"]').addEventListener('click', App.showHome);
     const order = (qs) => Vocab.levelTypes(level).flatMap((t) => qs.filter((q) => q.type === t));
     const start = (qs) => VocabPractice.run({ level, list: order(qs), title: '오답노트', back: () => show(level), review: true });
     if (list.length) $('[data-act="all"]').addEventListener('click', () => start(list));
+    if (due.length) $('[data-act="due"]').addEventListener('click', () => start(due));
     $$('[data-type]').forEach((b) => b.addEventListener('click', () => start(list.filter((q) => q.type === b.dataset.type))));
     $$('[data-remove]').forEach((b) => b.addEventListener('click', () => {
       Storage.removeFromReview(Vocab.SECTION, b.dataset.remove);

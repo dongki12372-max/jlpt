@@ -314,6 +314,7 @@ rt { font-size: 0.55em; color: var(--text-dim); }
 .review-list .link { margin-left: auto; }
 .empty p { margin: 0; }
 .result-list .badge { margin-left: 6px; font-size: 11px; padding: 0 6px; }
+.result-list .badge:not(.ok):not(.ng) { background: var(--surface-2); color: var(--text-dim); font-weight: 500; }
 
 /* ============== 문자·어휘 · 단어장 ============== */
 .deck-home { text-align: center; }
