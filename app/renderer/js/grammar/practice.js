@@ -48,9 +48,9 @@ const GrammarPractice = (() => {
     }));
   }
 
-  // 문항 목록을 차례로 푼다 (연습·오답노트·문형의 관련 문제 공용)
+  // 문항 목록을 차례로 푼다 (연습·오답노트·문형의 관련 문제·오늘의 학습 공용)
   //   results[id] = { n, correct } (bunshou: { n: 빈칸별 배열, correct: 다 맞혔는지, right }) — 건너뛴 문항은 없음
-  function run({ level, list, title, back, again, review = false }) {
+  function run({ level, list, title, back, again, review = false, backLabel = null, againLabel = '다시 풀기' }) {
     const session = { list, idx: 0, results: {} };
     showQuestion();
 
@@ -66,7 +66,7 @@ const GrammarPractice = (() => {
       GrammarQuestionView.show(q, {
         crumb: `${level} · ${review ? '오답노트' : `<span lang="ja">${tc.label_ja}</span> ${tc.label_ko}`}`,
         pos: `${session.idx + 1} / ${session.list.length}`,
-        backLabel: review ? '← 오답노트' : '← 뒤로',
+        backLabel: backLabel || (review ? '← 오답노트' : '← 뒤로'),
         onBack: back,
         answered: done ? done.n : undefined,
         onAnswer: q.type === 'bunshou'
@@ -107,7 +107,7 @@ const GrammarPractice = (() => {
           <ul class="result-list single">${rows}</ul>
           <div class="next-row">
             <button class="secondary" data-act="back">뒤로</button>
-            ${again ? '<button class="primary" data-act="again">다시 풀기</button>' : ''}
+            ${again ? `<button class="primary" data-act="again">${Util.esc(againLabel)}</button>` : ''}
           </div>
         </section>
       `, { onKey: (e) => { if (e.key === 'Escape') back(); else if (e.key === 'Enter' && again) { e.preventDefault(); again(); } } });

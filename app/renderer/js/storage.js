@@ -83,7 +83,13 @@ const Storage = (() => {
       out.quiz = { ...(x.quiz || {}) };
       for (const [k, v] of Object.entries(y.quiz || {})) if (!out.quiz[k] || v.n > out.quiz[k].n) out.quiz[k] = v;
     }
-    if (x.daily && y.daily && x.daily.day === y.daily.day) out.daily = { day: x.daily.day, newDone: Math.max(x.daily.newDone, y.daily.newDone) };
+    if (x.daily && y.daily && x.daily.day === y.daily.day) {
+      out.daily = { day: x.daily.day, newDone: Math.max(x.daily.newDone, y.daily.newDone) };
+      if (x.daily.byLevel || y.daily.byLevel) {
+        const bx = x.daily.byLevel || {}, by = y.daily.byLevel || {};
+        out.daily.byLevel = Object.fromEntries([...new Set([...Object.keys(bx), ...Object.keys(by)])].map((k) => [k, Math.max(bx[k] || 0, by[k] || 0)]));
+      }
+    }
     return out;
   }
   function merge(a, b) {

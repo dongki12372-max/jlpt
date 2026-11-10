@@ -142,6 +142,15 @@
 
     reviewClearStreak: 2,                          // 오답노트에서 자동 제거되는 연속 정답 수 (전 영역 공통)
 
+    // 오늘의 학습 (js/daily.js): 레벨마다 하루 분량을 정해 단어장·청해·문자어휘·문법을 골고루.
+    //   문제는 영역별 문항 수 (0 = 빼기), 단어장은 그날의 복습 + 새 카드 (새 카드 수는 위 srs.newPerDay)
+    daily: {
+      questions: { listening: 5, vocab: 10, grammar: 5 },  // 기본 분량 (홈 「분량 바꾸기」에서 레벨마다 변경)
+      questionOptions: [0, 3, 5, 10, 15, 20],
+      reviewShare: 0.5,                            // 한 번에 내는 문항 중 오답노트 문항이 차지하는 최대 비율
+      weekDays: 7,                                 // 홈에 점으로 보여 주는 최근 날 수
+    },
+
     // 기기 간 동기화 (js/sync.js) — Firebase 프로젝트의 Firestore. 비어 있으면 설정 화면에 「서버 설정 전」으로 나온다.
     //   apiKey·projectId는 웹 앱에 그대로 들어가는 공개 값이다 (접근 제어는 Firestore 규칙: 20자 코드 경로만 허용).
     sync: {

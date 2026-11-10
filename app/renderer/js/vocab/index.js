@@ -3,7 +3,7 @@
 //
 //   기록 (progress.json sections.vocab):
 //     cards:       { '{단어 key}#reading' | '{단어 key}#meaning': SRS 카드 (srs.js) }
-//     daily:       { day: 'YYYY-MM-DD', newDone }   오늘 시작한 새 카드 수
+//     daily:       { day: 'YYYY-MM-DD', newDone, byLevel: {N5: n} }   오늘 시작한 새 카드 수 (전체, 단어 레벨별)
 //     studyDays:   ['YYYY-MM-DD', …]                 공부한 날 (연속 학습일)
 //     priorityNew: ['단어 key', …]                    문제에서 틀린 새 단어 (새 카드 대기열 맨 앞)
 //     items, exams: 문제 풀이 기록 (청해와 같은 형식)
@@ -63,11 +63,14 @@ const Vocab = (() => {
   }
   const card = (id) => store().cards[id] || null;
 
-  function newDoneToday(now) {
+  // 하루 새 카드 수는 레벨마다 따로 센다 (단어의 레벨 기준, 누적 범위면 범위 안 레벨을 합쳐서) — 오늘의 학습이 레벨별이라
+  function newDoneToday(level, now) {
     const d = store().daily;
-    return d.day === Srs.dayKey(now) ? d.newDone : 0;
+    if (d.day !== Srs.dayKey(now)) return 0;
+    if (!d.byLevel) return d.newDone;   // 레벨별로 세기 전에 남긴 오늘 기록
+    return scopeLevels(level).reduce((n, lv) => n + (d.byLevel[lv] || 0), 0);
   }
-  const newRemaining = (now) => Math.max(0, prefs.newPerDay - newDoneToday(now));
+  const newRemaining = (level, now) => Math.max(0, prefs.newPerDay - newDoneToday(level, now));
 
   // 새 카드 후보 (순서대로). 읽기 카드는 같은 단어의 뜻 카드를 전날까지 시작했을 때만 (같은 날 둘 다 나오지 않게)
   function newCandidates(level, now) {
@@ -105,7 +108,7 @@ const Vocab = (() => {
     const learning = due.find((x) => x.c.state !== 'review');
     if (learning) return { id: learning.id, isNew: false };
     if (due.length) return { id: due[0].id, isNew: false };
-    if (newRemaining(now) > 0) {
+    if (newRemaining(level, now) > 0) {
       const n = newCandidates(level, now)[0];
       if (n) return { id: n, isNew: true };
     }
@@ -121,7 +124,7 @@ const Vocab = (() => {
     return {
       learning: due.filter((x) => x.c.state !== 'review').length,
       review: due.filter((x) => x.c.state === 'review').length,
-      fresh: Math.min(newRemaining(now), newCandidates(level, now).length),
+      fresh: Math.min(newRemaining(level, now), newCandidates(level, now).length),
     };
   }
 
@@ -133,8 +136,10 @@ const Vocab = (() => {
     if (!prev) {
       if (s.daily.day !== today) s.daily = { day: today, newDone: 0 };
       s.daily.newDone += 1;
-      // 틀려서 앞당긴 단어는 카드를 모두 시작하면 대기열 앞에서 뺀다
       const w = word(splitCard(id).key);
+      s.daily.byLevel = s.daily.byLevel || {};
+      if (w) s.daily.byLevel[w.level] = (s.daily.byLevel[w.level] || 0) + 1;
+      // 틀려서 앞당긴 단어는 카드를 모두 시작하면 대기열 앞에서 뺀다
       if (w && cardIds(w).every((c) => s.cards[c])) s.priorityNew = s.priorityNew.filter((k) => k !== w.key);
     }
     if (!s.studyDays.includes(today)) {
@@ -285,7 +290,7 @@ const Vocab = (() => {
     render() {
       return `
         <label class="row">
-          <span>하루 새 카드 수</span>
+          <span>하루 새 카드 수 <span class="dim small">(레벨마다)</span></span>
           <select data-setting="newPerDay">
             ${cfg.srs.newPerDayOptions.map((n) => `<option value="${n}" ${n === prefs.newPerDay ? 'selected' : ''}>${n}장</option>`).join('')}
           </select>

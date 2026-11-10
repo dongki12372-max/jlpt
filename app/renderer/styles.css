@@ -93,6 +93,36 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .mode-title { font-size: 17px; font-weight: 700; }
 .mode-desc { color: var(--text-dim); font-size: 13px; }
 
+/* 오늘의 학습 (레벨 탭 아래) */
+.daily { margin: 0 0 16px; }
+.daily-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.daily-head h2 { margin: 0; font-size: 17px; }
+.daily-streak { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+.daily-streak strong { color: var(--text); font-size: 15px; }
+.daily-week { display: inline-flex; gap: 5px; margin-left: auto; }
+.day-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--border); }
+.day-dot.on { background: var(--ok); border-color: var(--ok); }
+.day-dot.today:not(.on) { border-color: var(--accent); }
+.daily-parts { list-style: none; margin: 0; padding: 0; }
+.daily-part {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  background: none; border: none; border-top: 1px solid var(--border); padding: 9px 2px;
+}
+.daily-part:not(:disabled):hover .name { color: var(--accent); }
+.daily-part:disabled { opacity: 1; }
+.daily-part .mark {
+  flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+}
+.daily-part.done .mark { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+.daily-part.done .name { color: var(--text-dim); }
+.daily-part .name { font-weight: 600; }
+.daily-part .count { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.daily-part.done .count { color: var(--ok); }
+.daily .next-row { margin-top: 10px; }
+.daily .next-row .link { margin-left: auto; font-size: 13px; }
+.daily-done { color: var(--ok); font-weight: 600; }
+
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; }
 .table th { color: var(--text-dim); font-weight: 500; font-size: 13px; }
