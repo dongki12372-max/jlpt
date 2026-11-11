@@ -8,6 +8,8 @@ const { createStaticServer } = require('./static_server');
 
 if (process.env.JLPT_USER_DATA) app.setPath('userData', process.env.JLPT_USER_DATA);
 app.on('window-all-closed', () => {});
+// 테스트는 소리를 내지 않는다 (재생·끝남 이벤트는 그대로)
+app.commandLine.appendSwitch('mute-audio');
 
 function serve() {
   // 같은 userData로 다시 실행할 때 localStorage(출처별)가 이어지도록 포트를 고정한다
