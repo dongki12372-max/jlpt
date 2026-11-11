@@ -39,6 +39,7 @@
         "type": { "enum": ["kadai", "point", "gaiyou", "hatsuwa", "sokuji"] },
         "situation": { "type": "string", "description": "맨 앞에 읽는 상황 설명. 즉시응답은 빈 문자열" },
         "question": { "type": "string", "description": "질문 문장. 즉시응답은 빈 문자열" },
+        "situationTts": { "$ref": "#/$defs/nonEmpty", "description": "발화표현 전용: situation + question의 edge-tts 읽기 교정용. 바꾼 부분은 스크립트 후리가나 읽기와 일치해야 한다" },
         "lines": { "type": "array", "items": { "$ref": "#/$defs/line" } },
         "options": { "type": "array", "items": { "$ref": "#/$defs/option" }, "minItems": 3, "maxItems": 4 },
         "spokenOptions": { "type": "boolean" },
@@ -95,7 +96,7 @@
       "allOf": [
         { "if": { "properties": { "type": { "const": "hatsuwa" } } }, "then": { "required": ["scene", "optionSpeaker"] } },
         { "if": { "properties": { "type": { "const": "sokuji" } } }, "then": { "required": ["optionSpeaker"] } },
-        { "if": { "properties": { "type": { "not": { "const": "hatsuwa" } } } }, "then": { "not": { "required": ["scene"] } } }
+        { "if": { "properties": { "type": { "not": { "const": "hatsuwa" } } } }, "then": { "not": { "anyOf": [{ "required": ["scene"] }, { "required": ["situationTts"] }] } } }
       ]
     }
   }

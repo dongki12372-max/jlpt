@@ -1,7 +1,7 @@
 // ============================================================
 // 문자·어휘 · 문항 화면 (유형별 연습·오답노트 풀이, 실전 모의 결과의 해설 보기)
 //   지시문, 문제 문장(밑줄·빈칸), 선택지 4개 → 즉시 채점 → 해설 패널
-//   해설: 완성 문장(후리가나 토글) ▶ 문장 음성, 한국어 해설, 오답 선택지별 설명, 이 문항의 단어 카드 미리보기
+//   해설: 완성 문장(후리가나·해석 토글) ▶ 문장 음성, 한국어 해설, 오답 선택지별 설명, 이 문항의 단어 카드 미리보기
 //   단축키: 1~4 답 선택, Enter 다음, F 후리가나 토글, Esc 뒤로
 //
 //   VocabQuestionView.show(q, { crumb, pos, backLabel, onBack, answered, onAnswer(n, correct), nextLabel, onNext, onPrev, onSkip })
@@ -14,6 +14,7 @@ const VocabQuestionView = (() => {
 
   function applyFurigana(forceOff = false) {
     document.body.classList.toggle('no-furigana', forceOff || !prefs().furigana);
+    document.body.classList.toggle('no-ko', !prefs().showKo);
   }
 
   // 후리가나 표기 → HTML: 밑줄 [[ ]] → <u>, 빈칸 （　） → 넓은 괄호
@@ -64,9 +65,13 @@ const VocabQuestionView = (() => {
       <section class="explain card">
         <div class="explain-head">
           <h3>완성 문장</h3>
-          <label class="switch"><input type="checkbox" data-el="furi" ${prefs().furigana ? 'checked' : ''}> 후리가나 <span class="kbd">F</span></label>
+          <span class="switches">
+            <label class="switch"><input type="checkbox" data-el="ko" ${prefs().showKo ? 'checked' : ''}> 해석</label>
+            <label class="switch"><input type="checkbox" data-el="furi" ${prefs().furigana ? 'checked' : ''}> 후리가나 <span class="kbd">F</span></label>
+          </span>
         </div>
         <p class="full" lang="ja">${markup(q.fullFurigana)} <button class="btn-mini" data-act="full-audio" title="문장 음성">▶</button></p>
+        <p class="ko" lang="ko">${Util.esc(q.fullKo)}</p>
         <h3>해설</h3>
         <p>${Util.esc(q.explanation_ko)}</p>
         <h3>선택지</h3>
@@ -79,6 +84,8 @@ const VocabQuestionView = (() => {
   function bindExplain(q, back) {
     const furi = $('[data-el="furi"]');
     if (furi) furi.addEventListener('change', (e) => { prefs().furigana = e.target.checked; applyFurigana(); });
+    const ko = $('[data-el="ko"]');
+    if (ko) ko.addEventListener('change', (e) => { prefs().showKo = e.target.checked; applyFurigana(); });
     const full = $('[data-act="full-audio"]');
     if (full) full.addEventListener('click', () => Clip.play(Vocab.audioUrl('questions', q.id)));
     $$('[data-word-audio]').forEach((b) => b.addEventListener('click', () => Clip.play(Vocab.wordAudio(Vocab.word(b.dataset.wordAudio)))));

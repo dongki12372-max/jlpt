@@ -12,7 +12,7 @@ from pathlib import Path
 
 from validate import QUESTIONS_DIR, ROOT
 
-FIELD_ORDER = ["id", "level", "type", "situation", "question", "lines", "options", "spokenOptions",
+FIELD_ORDER = ["id", "level", "type", "situation", "question", "situationTts", "lines", "options", "spokenOptions",
                "optionSpeaker", "phone", "answer", "scene", "script", "scriptKo", "gloss", "optionsKo", "explanation_ko", "vocab", "tags"]
 INLINE_LISTS = {"lines", "options", "vocab"}
 

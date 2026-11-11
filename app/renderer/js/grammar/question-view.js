@@ -3,7 +3,8 @@
 //   bunpou  문장의 （　）에 들어갈 말 4지선다 → 즉시 채점
 //   narabe  조각 4개를 눌러 자리에 순서대로 놓기(놓인 조각을 누르면 빠짐) → 「확인」 → ★ 자리의 조각으로 채점
 //   bunshou 글의 빈칸 ［1］~［n］마다 4지선다, 빈칸마다 바로 채점 → 다 풀면 완성 글·해석
-//   해설: 완성 문장(후리가나·해석 토글) ▶ 문장 음성, 해설, 선택지별 오답 설명, 이 문항의 문형(문형 사전으로)
+//   해설: 완성 문장(후리가나·해석 토글) ▶ 문장 음성 — 읽는 단어를 초록색으로, 단어를 누르면 사전 창(ReadAlong),
+//         해설, 선택지별 오답 설명, 이 문항의 문형(문형 사전으로)
 //   「모름」(키 0): 찍지 않고 오답으로 기록하고 해설 (bunshou는 아직 안 푼 첫 빈칸)
 //   단축키: 1~4 답(bunshou는 아직 안 푼 첫 빈칸, narabe는 조각 놓기), Backspace 마지막 조각 빼기,
 //           Enter 확인·다음, ← → 이전·건너뛰기, Esc 뒤로
@@ -157,18 +158,16 @@ const GrammarQuestionView = (() => {
       <label class="switch"><input type="checkbox" data-el="furi" ${prefs().furigana ? 'checked' : ''}> 후리가나</label>
     </span>`;
   }
-  function bindSwitches() {
+  function bindSwitches(q, back) {
     const furi = $('[data-el="furi"]');
     if (furi) furi.addEventListener('change', (e) => { prefs().furigana = e.target.checked; applyPrefs(); });
     const ko = $('[data-el="ko"]');
     if (ko) ko.addEventListener('change', (e) => { prefs().showKo = e.target.checked; applyPrefs(); });
-    const audio = $('[data-act="full-audio"]');
-    if (audio) audio.addEventListener('click', () => Clip.play(Grammar.questionAudio({ id: audio.dataset.qid })));
+    ReadAlong.bind($('.explain'), { [q.id]: Grammar.questionRead(q) }, back);
   }
   const fullHtml = (q) => `
     <div class="explain-head"><h3>${q.type === 'bunshou' ? '완성한 글' : '완성 문장'}</h3>${switchesHtml()}</div>
-    <div class="full" lang="ja">${markup(q.fullFurigana)} <button class="btn-mini" data-act="full-audio" data-qid="${Util.esc(q.id)}" title="음성">▶</button></div>
-    <p class="ko" lang="ko">${Util.esc(q.fullKo).replace(/\n/g, '<br>')}</p>`;
+    ${ReadAlong.html(q.id, Grammar.questionRead(q).lines, { cls: 'full' })}`;
 
   // 해설 패널 (bunpou·narabe). answered = 고른 번호(0 모름·무응답), placed = narabe 배열(있으면)
   function explainHtml(q, answered, placed = null, blank = '모름') {
@@ -253,7 +252,7 @@ const GrammarQuestionView = (() => {
     function renderResult() {
       $('[data-el="result"]').innerHTML = explainHtml(q, answered, q.type === 'narabe' ? placed : null, opts.blankLabel);
       nextButton($('[data-el="next-row"]'));
-      bindSwitches();
+      bindSwitches(q, back);
       bindPointCards(back);
     }
 
@@ -283,7 +282,7 @@ const GrammarQuestionView = (() => {
           <div class="next-row" data-el="next-row"></div>
           <section class="explain card">${fullHtml(q)}${pointCardsHtml(Grammar.targetsOf(q))}</section>`;
         nextButton($('[data-el="next-row"]'));
-        bindSwitches();
+        bindSwitches(q, back);
         bindPointCards(back);
       }
     }

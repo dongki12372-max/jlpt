@@ -234,6 +234,9 @@ button.opt:hover { border-color: var(--accent); }
 .hint { font-size: 12px; margin: 6px 0 0; }
 
 rt { font-size: 0.55em; color: var(--text-dim); }
+/* 후리가나 묶음: 읽기가 한자보다 길어도 옆 글자 위로 넘어가지 않는다 (묶음 폭이 읽기만큼 넓어진다) */
+.rb { display: inline-block; }
+ruby { ruby-align: center; }   /* 읽기가 더 길 때 한자끼리는 붙여 둔다 (남는 폭은 양옆으로) */
 .no-furigana rt { display: none; }
 
 .vocab td:first-child { font-weight: 600; white-space: nowrap; }
@@ -367,6 +370,7 @@ ul.plain li { padding: 3px 0; }
 .type-label { display: inline-block; background: var(--surface-2); color: var(--text); border-radius: 6px; padding: 0 8px; margin-right: 6px; font-size: 13px; }
 .vq .stem { font-size: 21px; line-height: 2.1; margin: 8px 0 18px; }
 .under { text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.under .rb { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }   /* 밑줄은 inline-block 안으로 이어지지 않는다 */
 .blank { letter-spacing: 0.2em; color: var(--accent); }
 .youhou-word { font-size: 30px; font-weight: 600; margin: 4px 0 16px; }
 .options.sentences .opt .opt-text { font-size: 16px; line-height: 2; }
@@ -425,8 +429,12 @@ ul.plain li { padding: 3px 0; }
 .dict-meaning { margin: 6px 0 2px; font-size: 15px; }
 .dict-pop p { margin: 4px 0 0; }
 .dict-deck { display: flex; gap: 10px; align-items: baseline; }
-.script .u.speaking { color: var(--ok); }
-.script .u.speaking rt { color: var(--ok); }
+.u.speaking, .u.speaking rt { color: var(--ok); }
+
+/* 따라 읽기 (ReadAlong): 줄마다 문장 + 해석 */
+.read .rl { margin: 2px 0; }
+.read .ko { display: block; color: var(--text-dim); font-size: 14px; line-height: 1.5; margin: 0 0 6px; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif; }
+.example .read .txt { font-size: 17px; }
 .row-btns { display: inline-flex; gap: 8px; flex: none; }
 
 /* ============== 단어장 객관식 퀴즈 ============== */

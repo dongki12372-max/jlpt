@@ -5,9 +5,12 @@ const Util = (() => {
   const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
 
+  // 후리가나 한 묶음 (이미 이스케이프한 글자). .rb로 감싸 읽기가 길어도 옆 글자 위로 넘어가지 않게 한다 (자기 폭 안에서만)
+  const ruby = (base, reading) => `<span class="rb"><ruby>${base}<rt>${reading}</rt></ruby></span>`;
+
   // {漢字|かんじ} → <ruby>漢字<rt>かんじ</rt></ruby> (이스케이프 먼저, 중괄호·|는 영향 없음)
   const furigana = (markup) =>
-    esc(markup).replace(/\{([^{}|]+)\|([^{}|]+)\}/g, '<ruby>$1<rt>$2</rt></ruby>');
+    esc(markup).replace(/\{([^{}|]+)\|([^{}|]+)\}/g, (_, base, reading) => ruby(base, reading));
 
   const fmtTime = (sec) => {
     const s = Math.max(0, Math.floor(sec || 0));
@@ -131,7 +134,7 @@ const Util = (() => {
 
   return {
     isDue, reviewWhen, reviewStatus, reviewRule, reviewButtons, reviewDesc, reviewBadge,
-    esc, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText,
+    esc, ruby, furigana, fmtTime, shuffle, SPEAKER_LABEL, now, setClockOffset, stepNav, bindStepNav, stepKey, resultRow, resultHead, dontKnow, verdictText,
     stamp, resumeIndex, orderList, orderButtons, resumeNote,
   };
 })();

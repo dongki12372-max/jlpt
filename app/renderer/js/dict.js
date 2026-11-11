@@ -16,7 +16,7 @@ const Dict = (() => {
     const plainChars = (str) => { for (const ch of str) out.push({ plain: ch, html: Util.esc(ch) }); };
     while ((m = re.exec(markup))) {
       plainChars(markup.slice(pos, m.index));
-      out.push({ plain: m[1], html: `<ruby>${Util.esc(m[1])}<rt>${Util.esc(m[2])}</rt></ruby>` });
+      out.push({ plain: m[1], html: Util.ruby(Util.esc(m[1]), Util.esc(m[2])) });
       pos = m.index + m[0].length;
     }
     plainChars(markup.slice(pos));
@@ -73,7 +73,7 @@ const Dict = (() => {
     const w = deckWord(g);
     const gp = grammarPoint(g);
     const hasKanji = /[一-龯々〆ヵヶ]/.test(g.w);
-    const head = hasKanji && !g.w.startsWith('〜') ? `<ruby>${Util.esc(g.w)}<rt>${Util.esc(g.r)}</rt></ruby>` : Util.esc(g.w);
+    const head = hasKanji && !g.w.startsWith('〜') ? Util.ruby(Util.esc(g.w), Util.esc(g.r)) : Util.esc(g.w);
     pop = document.createElement('div');
     pop.className = 'dict-pop';
     pop.setAttribute('role', 'dialog');

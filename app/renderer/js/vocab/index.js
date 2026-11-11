@@ -19,6 +19,8 @@ const Vocab = (() => {
   const prefs = {
     get furigana() { return Storage.getSetting('common', 'furigana', true); },
     set furigana(v) { Storage.setSetting('common', 'furigana', !!v); },
+    get showKo() { return Storage.getSetting(SECTION, 'showKo', true); },
+    set showKo(v) { Storage.setSetting(SECTION, 'showKo', !!v); },
     get newPerDay() { return Storage.getSetting(SECTION, 'newPerDay', cfg.srs.newPerDay); },
     set newPerDay(v) { Storage.setSetting(SECTION, 'newPerDay', v); },
     // 학습 범위: 'level' 한 레벨만 / 'cumulative' 아래 레벨까지

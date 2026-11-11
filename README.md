@@ -20,9 +20,10 @@ JLPT 청해(聴解), 문자·어휘(文字・語彙), 문법(文法)을 연습�
 - **문제 은행**: 레벨별 실전 모의 3회분 (N5 63 · N4 84 · N3 105문항).
 
 ### 문법
-- **문형 사전**: N5·N4·N3 문형마다 뜻, 접속, 설명, 예문 2개(▶ 음성·해석), 비슷한 문형, 이 문형이 나오는 문제. 레벨·상태·검색 필터.
+- **문형 사전**: N5·N4·N3 문형마다 뜻, 접속, 설명, 예문 2개(▶ 음성·해석·단어 사전), 비슷한 문형, 이 문형이 나오는 문제. 레벨·상태·검색 필터.
 - **문형 퀴즈 (객관식)**: 뜻 고르기·문형 고르기·섞어서, 범위(이 레벨·아래 레벨까지·약한 문형)와 문항 수. 틀린 문형은 「약한 문형」이 되고, 오답노트와 같은 간격(1일 → 3일 → 7일)으로 다시 맞히면 풀립니다.
-- **유형별 연습**: 文法形式の判断(빈칸)·文の組み立て(조각을 눌러 순서대로 놓고 ★ 자리로 채점)·文章の文法(글의 빈칸). 해설에 완성 문장(▶ 음성·해석), 선택지마다 틀린 이유, 이 문항의 문형.
+- **유형별 연습**: 文法形式の判断(빈칸)·文の組み立て(조각을 눌러 순서대로 놓고 ★ 자리로 채점)·文章の文法(글의 빈칸). 해설에 완성 문장(▶ 음성·줄마다 해석), 선택지마다 틀린 이유, 이 문항의 문형.
+- **문장 공부** (예문·완성 문장·완성한 글): 청해 스크립트처럼 단어를 누르면 사전 창(사전형·읽기·뜻, 문형이면 「문형 사전에서 보기」), ▶로 들으면 지금 읽는 단어가 초록색으로 표시됩니다.
 - **실전 모의**: 레벨별 구성·시간(N5 15분 · N4 20분 · N3 25분 — 실제 시험은 독해와 합쳐 재므로 문법 몫만), 자유 이동·답 바꾸기·자동 제출. **오답노트**도 같은 방식.
 - 청해 스크립트의 문법 표현(〜ておく 등)을 누르면 사전 창에서 「문형 사전에서 보기」로 이어집니다.
 
@@ -77,7 +78,7 @@ npm run web:check                             # 폰·폴드 화면 폭, 기록 �
 ## 문자·어휘 데이터
 
 - 단어: `data/vocab/words/{n5,n4,n3}.json` (한 줄에 한 단어, 형식은 `data/vocab/schema-words.json`). 기록은 `key`(단어|읽기) 기준이라 id나 순서가 바뀌어도 유지됩니다.
-- 문제: `data/vocab/questions/{n5,n4,n3}.json` (`data/vocab/schema-questions.json`). 후리가나 `{漢字|かな}`, 밑줄 `[[ ]]`, 빈칸 `（　）`.
+- 문제: `data/vocab/questions/{n5,n4,n3}.json` (`data/vocab/schema-questions.json`). 후리가나 `{漢字|かな}`, 밑줄 `[[ ]]`, 빈칸 `（　）`. `fullKo`는 완성 문장의 한국어 해석 (해설에서 「해석」으로 켜고 끔).
 - 검사: `.venv/bin/python tools/validate_vocab.py` (후리가나가 답을 알려 주지 않는지, targets가 단어 데이터에 있고 레벨 이하인지, 선택지 형태, 정답 분포 등).
 - 배치로 추가: 단어는 `tools/merge_words.py <배치>`, 문제는 `tools/merge_questions.py <배치>` (검사를 통과해야 합쳐짐).
 - 청해 문항의 vocab(word·expression)은 `tools/import_listening_vocab.py`로 단어 데이터와 출처를 맞춥니다.
@@ -88,7 +89,8 @@ npm run web:check                             # 폰·폴드 화면 폭, 기록 �
 - 문형: `data/grammar/points/{n5,n4,n3}.json` (한 줄에 문형 하나, `data/grammar/schema-points.json`). 기록은 `key`(= 문형 표기) 기준.
 - 문제: `data/grammar/questions/{n5,n4,n3}.json` (`data/grammar/schema-questions.json`). 빈칸 `（　）`, 문장 만들기 자리 `［＿］`·`［★］`, 글의 빈칸 `［1］`…
 - 작성 규칙: `docs/DESIGN.md` 5장. 검사 `.venv/bin/python tools/validate_grammar.py`, 배치 합치기 `tools/merge_grammar.py points|questions <배치>`.
-- 음성: `.venv/bin/python tools/build_grammar_audio.py` (예문·완성 문장, 바뀐 것만), 읽기 의심 확인 `tools/check_grammar_tts.py [--fix]`.
+- 단어 풀이 `gloss`(예문·완성 문장의 단어: 문장 속 모양 t·사전형 w·읽기 r·뜻 m)는 필수. 따로 쓴 풀이는 `tools/merge_grammar_gloss.py <파일>`로 넣고(`--check`는 검사만), 쓸 문장 목록은 `--worklist <폴더>`로 뽑습니다.
+- 음성: `.venv/bin/python tools/build_grammar_audio.py` (예문·완성 문장, 바뀐 것만. 단어별 시각도 `audio/grammar/manifest.json`의 `words`에 남겨 읽는 단어 표시로 씀), 읽기 의심 확인 `tools/check_grammar_tts.py [--fix]`.
 
 ## 음성 다시 만들기
 
@@ -104,12 +106,13 @@ npm run web:check                             # 폰·폴드 화면 폭, 기록 �
 - 결과: `audio/listening/{레벨}/{id}.mp3`, 유형별 지시문 `_intro_{유형}.mp3`, 구간 시각과 단어별 시각(edge-tts WordBoundary) `audio/listening/manifest.json`.
 - 화자 음성(N·M·F·M2·F2)과 쉼 길이는 `tools/voices.json`. 값을 바꾸면 그 화자를 쓰는 문항만 다시 생성됩니다. 화자 후보 비교 샘플은 `tools/voice_compare.py`.
 - 지시문 문구는 `data/listening/intros.json`.
+- 읽기 검사(세 영역 공통): `.venv/bin/python tools/check_readings.py` — 문장의 한자 묶음을 하나씩 가나로 바꿔 읽힌 음성과 비교해 잘못 읽힌 한자(町 → ちょう 등)를 찾습니다. 가타카나로 바꾼 음성과도 벌어지고, 그 한자의 다른 읽기(`tools/reading_alts.json`)로 바꾼 음성 쪽에 더 가까울 때만 오독으로 보고, `--fix`를 주면 `ttsText`(청해 발화표현의 상황은 `situationTts`)를 넣습니다. 그다음 validate*.py → build_*_audio.py. 기준은 `tools/voices.json`의 `readings`. 「표에 없음」으로 나온 묶음은 표에 다른 읽기를 더해 다시 돌립니다. (`--area vocab|grammar|listening`, `--level`)
 
 ## 구조
 
 ```
 app/            웹 앱 (config.js · renderer/)
-  renderer/js/          공통: app.js(홈·화면 전환) daily.js(오늘의 학습) player.js storage.js util.js dict.js web.js(데이터·기록 읽기) sync.js(기기 간 동기화)
+  renderer/js/          공통: app.js(홈·화면 전환) daily.js(오늘의 학습) player.js storage.js util.js dict.js(사전 창) readalong.js(문장 공부: 단어 사전 + 읽는 단어 표시) web.js(데이터·기록 읽기) sync.js(기기 간 동기화)
   renderer/js/listening/ 청해: index.js practice.js exam.js review.js question-view.js
   renderer/js/vocab/     문자·어휘: index.js srs.js deck.js quiz.js question-view.js practice.js exam.js
   renderer/js/grammar/   문법: index.js points.js(문형 사전·퀴즈) question-view.js practice.js exam.js
@@ -118,7 +121,8 @@ data/vocab/     단어·문제·스키마
 data/grammar/   문형·문제·스키마
 audio/          생성 음성 (git 제외): listening/, vocab/{words,examples,questions}/, grammar/{examples,questions}/
 tools/          validate.py build_audio.py merge_batch.py voice_compare.py smoke_app.js smoke_daily.js web_check.js deploy_web.sh
-                validate_grammar.py merge_grammar.py build_grammar_audio.py check_grammar_tts.py grammar_common.py smoke_grammar.js
+                check_readings.py(읽기 검사) reading_alts.json
+                validate_grammar.py merge_grammar.py merge_grammar_gloss.py build_grammar_audio.py check_grammar_tts.py grammar_common.py smoke_grammar.js
                 validate_vocab.py build_vocab_audio.py check_vocab_tts.py merge_words.py merge_questions.py
                 import_listening_vocab.py vocab_common.py smoke_vocab.js
 docs/           DESIGN.md (영역 구조·기록 형식·단어 데이터), OVERNIGHT_REPORT.md

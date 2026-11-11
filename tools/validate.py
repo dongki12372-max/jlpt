@@ -266,7 +266,13 @@ def check_question(q, level_key, cfg, errors, warnings):
             for i, (g, w) in enumerate(zip(got, want), 1):
                 if g != w:
                     err(f"스크립트 {i}번째 줄이 대사와 다름\n      script: {g}\n      lines : {w}")
-    elif q["type"] != "hatsuwa":
+    elif q["type"] == "hatsuwa":
+        if "situationTts" in q:
+            plain, spans = furigana_spans(q["script"])
+            spans = [(s - 2, e - 2, r) for s, e, r in spans]   # "N：" 접두어
+            for is_err, msg in check_tts_reading(q["situation"] + q["question"], q["situationTts"], spans):
+                (err if is_err else warn)(f"상황: {msg}")
+    else:
         # ttsText ↔ 후리가나 읽기 (스크립트가 대사와 일치할 때만 줄 대응이 확실하다)
         for i, (line, sline) in enumerate(zip(q["lines"], q["script"].split("\n")), 1):
             if "ttsText" not in line:

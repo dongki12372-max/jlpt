@@ -16,7 +16,7 @@ LEVEL_RANK = {"N5": 0, "N4": 1, "N3": 2}
 
 WORD_FIELDS = ["id", "key", "word", "reading", "ttsText", "meaning_ko", "kind", "pos", "level", "example", "similar", "sources"]
 EXAMPLE_FIELDS = ["text", "furigana", "ttsText", "meaning_ko"]
-QUESTION_FIELDS = ["id", "level", "type", "stem", "stemFurigana", "word", "options", "answer", "fullText", "fullFurigana",
+QUESTION_FIELDS = ["id", "level", "type", "stem", "stemFurigana", "word", "options", "answer", "fullText", "fullFurigana", "fullKo",
                    "ttsText", "targets", "explanation_ko", "optionNotes_ko", "tags"]
 
 

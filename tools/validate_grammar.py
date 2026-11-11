@@ -15,8 +15,8 @@ from collections import Counter
 
 from jsonschema import Draft202012Validator
 
-from grammar_common import (GAUDIO_DIR, LEVEL_KEYS, LEVEL_RANK, POINTS_SCHEMA, QUESTIONS_SCHEMA, load_all_points,
-                            load_grammar_config, load_questions)
+from grammar_common import (GAUDIO_DIR, LEVEL_KEYS, LEVEL_RANK, POINTS_SCHEMA, QUESTIONS_SCHEMA, check_gloss_line,
+                            load_all_points, load_grammar_config, load_questions)
 from validate import KANJI_RE, check_furigana_markup, check_tts_reading, furigana_spans, to_hiragana
 
 BLANK = "（　）"
@@ -81,6 +81,8 @@ def check_point(p, level_key, cfg, err, warn):
         if check_markup(ex["furigana"], ex["text"], label, err, warn) and "ttsText" in ex:
             for is_err, msg in check_tts_reading(ex["text"], ex["ttsText"], furigana_spans(ex["furigana"])[1]):
                 (err if is_err else warn)(f"{label} ttsText: {msg}")
+        for is_err, msg in check_gloss_line(ex["furigana"], ex["gloss"]):
+            (err if is_err else warn)(f"{label} {msg}")
         if len(ex["text"]) > limit * 1.6:
             warn(f"{label} {len(ex['text'])}자 (기준 {limit}자 안팎)")
         hira = to_hiragana(ex["text"])
@@ -165,6 +167,13 @@ def check_question(q, level_key, cfg, points_by_key, err, warn):
     exam = cfg["levels"][level]["exam"]
     if not q["tags"]:
         warn("tags가 비어 있음")
+    lines = q["fullFurigana"].split("\n")
+    if len(q["gloss"]) != len(lines):
+        err(f"gloss {len(q['gloss'])}줄 ≠ fullFurigana {len(lines)}줄")
+    else:
+        for i, (markup, gloss) in enumerate(zip(lines, q["gloss"]), 1):
+            for is_err, msg in check_gloss_line(markup, gloss):
+                (err if is_err else warn)(f"{i}번째 줄 {msg}")
 
     if qtype == "bunpou":
         stem, ans = q["stem"], q["options"][q["answer"] - 1]["text"]

@@ -68,15 +68,15 @@ const GrammarPoints = (() => {
   }
 
   // ---------- 상세 ----------
+  // 예문: ▶ 음성이 나오는 동안 읽는 단어를 초록색으로, 단어를 누르면 사전 창 (ReadAlong)
+  const exampleKey = (p, n) => `${p.id}-${n}`;
   function examplesHtml(p) {
-    return p.examples.map((ex, i) => `
-      <div class="example">
-        <p lang="ja">${Util.furigana(ex.furigana)} <button class="btn-mini" data-ex="${i + 1}" title="예문 음성">▶</button></p>
-        <p class="ko dim">${Util.esc(ex.meaning_ko)}</p>
-      </div>`).join('');
+    return p.examples.map((ex, i) => `<div class="example">${ReadAlong.html(exampleKey(p, i + 1), Grammar.exampleRead(p, i + 1).lines)}</div>`).join('');
   }
-  function bindExamples(p) {
-    $$('[data-ex]').forEach((b) => b.addEventListener('click', () => Clip.play(Grammar.exampleAudio(p, Number(b.dataset.ex)))));
+  function bindExamples(p, back) {
+    const items = {};
+    p.examples.forEach((ex, i) => { items[exampleKey(p, i + 1)] = Grammar.exampleRead(p, i + 1); });
+    $$('.example').forEach((el) => ReadAlong.bind(el, items, back));
   }
 
   function showDetail(key, back) {
@@ -106,7 +106,7 @@ const GrammarPoints = (() => {
     `, { onKey: (e) => { if (e.key === 'Escape') back(); } });
 
     $('[data-act="back"]').addEventListener('click', back);
-    bindExamples(p);
+    bindExamples(p, () => showDetail(key, back));
     $$('[data-similar]').forEach((b) => b.addEventListener('click', () => showDetail(b.dataset.similar, () => showDetail(key, back))));
     const rel = $('[data-act="related"]');
     if (rel) rel.addEventListener('click', () => GrammarPractice.run({
@@ -285,7 +285,7 @@ const GrammarQuiz = (() => {
             ${GrammarPoints.examplesHtml(p)}
           </section>`;
         $('[data-act="next"]').addEventListener('click', next);
-        GrammarPoints.bindExamples(p);
+        GrammarPoints.bindExamples(p, show);
       }
 
       function answer(n) {

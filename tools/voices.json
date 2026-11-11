@@ -30,6 +30,8 @@
 
   "grammar": { "leadIn": 0.1, "tail": 0.25, "concurrency": 8, "check": { "example": 2.3, "question": 2.3 }, "_comment": "문법 예문·문항 음성의 앞뒤 여백(초)과 동시 생성 수 (build_grammar_audio.py), check = 읽기 의심 기준 MFCC-DTW 거리 (check_grammar_tts.py)" },
 
+  "readings": { "check": 3.5, "confirm": 3.3, "margin": 1.0, "same": 3.0, "_comment": "한자 묶음별 읽기 의심 기준 — 묶음 하나만 가나로 바꿔 읽힌 음성과의 국소 MFCC-DTW 비용(check). 가타카나로 바꾼 음성과도 confirm 이상 벌어지고, 그 한자의 다른 읽기(reading_alts.json)로 바꾼 음성이 margin 넘게 더 가까우면 오독. 고칠 때 히라가나로 바꾼 음성이 가타카나 쪽과 same 이상 다르면 가타카나로 넣는다 (check_readings.py)" },
+
   "output": { "sampleRate": 24000, "bitrate": "64k", "loudnorm": "I=-16:TP=-1.5:LRA=11" },
 
   "compare": {

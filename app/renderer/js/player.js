@@ -104,6 +104,7 @@ const Clip = (() => {
     },
     get src() { return audio.getAttribute('src') || ''; },
     get paused() { return audio.paused; },
+    get ended() { return audio.ended; },
     get currentTime() { return audio.currentTime; },
     get duration() { return Number.isFinite(audio.duration) ? audio.duration : 0; },
     get error() { return audio.error; },

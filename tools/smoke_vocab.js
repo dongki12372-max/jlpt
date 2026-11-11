@@ -272,7 +272,7 @@ async function questionTests({ js, click, exists, text, key, shot }) {
       await js(`(() => { Vocab.prefs.unsolvedFirst = false; Vocab.prefs.order = 'seq'; return true; })()`);
       await click(`[data-type="${type}"]`);
       await sleep(250);
-      const qs = await js(`Vocab.questions(${JSON.stringify(level)}).filter(q => q.type === ${JSON.stringify(type)}).map(q => ({ id: q.id, answer: q.answer, targets: q.targets }))`);
+      const qs = await js(`Vocab.questions(${JSON.stringify(level)}).filter(q => q.type === ${JSON.stringify(type)}).map(q => ({ id: q.id, answer: q.answer, targets: q.targets, fullKo: q.fullKo }))`);
       const view = await js(`({ qid: document.querySelector('[data-el=options]').dataset.qid, n: document.querySelectorAll('[data-el=options] .opt').length,
         inst: !!document.querySelector('.instruction'), under: !!document.querySelector('.stem .under'), blank: !!document.querySelector('.stem .blank'), word: !!document.querySelector('.youhou-word') })`);
       const shapeOk = type === 'bunmyaku' ? view.blank : type === 'youhou' ? view.word : view.under;
@@ -306,6 +306,17 @@ async function questionTests({ js, click, exists, text, key, shot }) {
         await key('F');
         await sleep(100);
         check(`${tag}: F로 후리가나 토글`, f1 !== (await js('document.body.classList.contains("no-furigana")')));
+        check(`${tag}: 완성 문장 해석`, (await js('document.querySelector(".explain .ko").textContent')) === q0.fullKo && !(await js('document.body.classList.contains("no-ko")')));
+        await click('[data-el="ko"]');
+        await sleep(100);
+        const koOff = await js('document.body.classList.contains("no-ko") && getComputedStyle(document.querySelector(".explain .ko")).display === "none"');
+        await click('[data-el="ko"]');
+        await sleep(100);
+        check(`${tag}: 해석 켜고 끄기`, koOff && !(await js('document.body.classList.contains("no-ko")')));
+        // 후리가나는 자기 한자 묶음 폭 안에만 (옆 글자 위로 넘어가지 않는다)
+        check(`${tag}: 후리가나가 묶음 밖으로 나가지 않음`, await js(`[...document.querySelectorAll('.rb')].length > 0 && [...document.querySelectorAll('.rb')].every((rb) => {
+          const a = rb.getBoundingClientRect(); const b = rb.querySelector('rt').getBoundingClientRect();
+          return b.left >= a.left - 0.5 && b.right <= a.right + 0.5; })`));
         await shot('v09-question-explain');
       }
       // 나머지: 키보드로 정답

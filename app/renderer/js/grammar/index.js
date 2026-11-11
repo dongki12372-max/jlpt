@@ -36,6 +36,21 @@ const Grammar = (() => {
   const exampleAudio = (p, n) => `../../audio/${SECTION}/examples/${p.id}-${n}.mp3`;
   const questionAudio = (q) => `../../audio/${SECTION}/questions/${q.id}.mp3`;
   const hasAudio = (kind, id) => !!(data.manifest && data.manifest[`${kind}/${id}`]);
+  // 따라 읽기(ReadAlong) 항목: 음성 주소 + 줄마다 단어 시각(manifest) + 줄마다 문장·단어 사전·해석
+  const audioWords = (kind, id) => (data.manifest && data.manifest[`${kind}/${id}`] && data.manifest[`${kind}/${id}`].words) || null;
+  const exampleRead = (p, n) => {
+    const ex = p.examples[n - 1];
+    return { src: exampleAudio(p, n), words: audioWords('examples', `${p.id}-${n}`), lines: [{ markup: ex.furigana, gloss: ex.gloss, ko: ex.meaning_ko }] };
+  };
+  const questionRead = (q) => {
+    const ja = q.fullFurigana.split('\n');
+    const ko = q.fullKo.split('\n');
+    const perLine = ko.length === ja.length;   // 줄 수가 같으면 줄마다 해석, 아니면 끝에 한 번
+    return {
+      src: questionAudio(q), words: audioWords('questions', q.id),
+      lines: ja.map((markup, i) => ({ markup, gloss: q.gloss ? q.gloss[i] : null, ko: perLine ? ko[i] : (i === ja.length - 1 ? q.fullKo.replace(/\n/g, ' ') : '') })),
+    };
+  };
 
   const pointRecord = (key) => Storage.item(SECTION, `point:${key}`);
   // new 아직 안 봄 / ok 맞힘 / weak 틀려서 다시 볼 문형 (복습 간격마다 다시 맞히면 ok로)
@@ -139,7 +154,7 @@ const Grammar = (() => {
 
   return {
     SECTION, cfg, prefs, LEVELS,
-    points, point, allPoints, exampleAudio, questionAudio, hasAudio, pointRecord, pointState, POINT_STATE_LABEL, recordPoint, duePoints,
+    points, point, allPoints, exampleAudio, questionAudio, hasAudio, exampleRead, questionRead, pointRecord, pointState, POINT_STATE_LABEL, recordPoint, duePoints,
     questions, question, levelTypes, recordIds, itemCount, targetsOf, record, recordAnswer, reviewList, dueList, exams, questionsFor,
     get data() { return data; },
   };

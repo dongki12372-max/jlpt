@@ -52,7 +52,7 @@ def plan_question(q, cfg, vc):
         line = q["lines"][0]
         say(["line", 0], line["speaker"], line.get("ttsText", line["text"]))
     elif qtype == "hatsuwa":
-        say(["situation"], "N", q["situation"] + q["question"])
+        say(["situation"], "N", q.get("situationTts", q["situation"] + q["question"]))
     else:
         say(["situation"], "N", q["situation"])
         if qtype == "point":
@@ -233,7 +233,7 @@ def manifest_entry(q, marks, duration, digest):
 def script_words(q, marks):
     if q["type"] == "hatsuwa":   # 스크립트 한 줄 = 상황 + 질문 (situation 구간에서 한 번에 읽음)
         text = q["situation"] + q["question"]
-        return [map_words(text, text, marks.get(("words", "situation"), []))]
+        return [map_words(text, q.get("situationTts", text), marks.get(("words", "situation"), []))]
     return [map_words(line["text"], line.get("ttsText", line["text"]), marks.get(("words", "line", i), []))
             for i, line in enumerate(q["lines"])]
 

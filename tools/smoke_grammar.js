@@ -83,7 +83,17 @@ async function run(win) {
   await click('.point-row');
   await sleep(200);
   check('문형 상세: 문형·뜻·접속·예문 2개', await exists('.point-detail .point-pattern') && await exists('.connection')
-    && (await js(`document.querySelectorAll('.point-detail [data-ex]').length`)) === 2);
+    && (await js(`document.querySelectorAll('.point-detail [data-read-play]').length`)) === 2
+    && (await js(`document.querySelectorAll('.point-detail .example .ko').length`)) === 2);
+  await click('.point-detail .example .gl');
+  await sleep(150);
+  check('문형 상세: 예문의 단어 → 사전 창', await exists('.dict-pop .dict-meaning'), await text('.dict-pop .dict-word'));
+  await js('Dict.close()');
+  await click('.point-detail [data-read-play]');
+  let spokeEx = '';
+  for (let k = 0; k < 40 && !spokeEx; k++) { await sleep(100); spokeEx = await js(`[...document.querySelectorAll('.point-detail .u.speaking')].map((x) => x.textContent).join('')`); }
+  check('문형 상세: 예문 ▶ → 읽는 단어 초록색', !!spokeEx && (await js('Clip.src')).includes('/audio/grammar/examples/'), spokeEx);
+  await js('Clip.stop()');
   const simKey = await js(`(document.querySelector('[data-similar]') || {}).dataset?.similar || ''`);
   if (simKey) {
     await click('[data-similar]');
@@ -136,6 +146,16 @@ async function run(win) {
       check('bunpou: 정답 → 해설(완성 문장·해석·선택지·문형)', (await text('.verdict')).startsWith('정답')
         && await exists('.explain .full') && await exists('.explain .ko') && await exists('.opt-notes') && await exists('[data-point]'));
       check('bunpou: 기록', (await js(`Storage.item('grammar', ${JSON.stringify(id)}).lastCorrect`)) === true);
+      // 단어를 누르면 사전 창, ▶를 누르면 읽는 단어가 초록색으로
+      await click('.explain .read .gl');
+      await sleep(150);
+      check('bunpou: 완성 문장의 단어 → 사전 창', await exists('.dict-pop .dict-meaning'), await text('.dict-pop .dict-word'));
+      await js('Dict.close()');
+      await click('.explain [data-read-play]');
+      let spoke = '';
+      for (let k = 0; k < 40 && !spoke; k++) { await sleep(100); spoke = await js(`[...document.querySelectorAll('.explain .read .u.speaking')].map((x) => x.textContent).join('')`); }
+      check('bunpou: ▶ → 읽는 단어 초록색', !!spoke && (await js('Clip.src')).includes('/audio/grammar/questions/'), spoke);
+      await js('Clip.stop()');
       await shot('bunpou-explain');
       await click('[data-point]');
       await sleep(150);
@@ -175,6 +195,15 @@ async function run(win) {
       }
       check('bunshou: 빈칸마다 채점·해설', (await js(`document.querySelectorAll('.item-explain').length`)) === q.items.length);
       check('bunshou: 다 풀면 완성 글·해석', await exists('.explain .full') && (await text('.verdict')).includes(`${q.items.length - 1} / ${q.items.length}`));
+      const lines = q.fullFurigana.split('\n').length;
+      check('bunshou: 완성 글은 줄마다 해석, 단어마다 사전', (await js(`document.querySelectorAll('.explain .read .rl').length`)) === lines
+        && (await js(`document.querySelectorAll('.explain .read .rl .ko').length`)) === lines
+        && (await js(`document.querySelectorAll('.explain .read .gl').length`)) === q.gloss.reduce((n, g) => n + g.length, 0));
+      await click('.explain [data-read-play]');
+      let spokeB = '';
+      for (let k = 0; k < 40 && !spokeB; k++) { await sleep(100); spokeB = await js(`[...document.querySelectorAll('.explain .read .u.speaking')].map((x) => x.textContent).join('')`); }
+      check('bunshou: ▶ → 읽는 단어 초록색', !!spokeB, spokeB);
+      await js('Clip.stop()');
       check('bunshou: 빈칸별 기록', (await js(`Storage.item('grammar', ${JSON.stringify(id + '#1')}).review`)) === true
         && (await js(`Storage.item('grammar', ${JSON.stringify(id + '#2')}).lastCorrect`)) === true);
       await shot('bunshou-explain');

@@ -9,10 +9,11 @@
 순서: validate_grammar.py 통과 → edge-tts → (앞뒤 여백 + loudnorm) → audio/grammar/{examples,questions}/{id}.mp3
 화자: 예문 1은 F, 예문 2는 M, 문항(완성 문장·글)은 N. 대화문의 「A：」「B：」는 읽지 않는다.
 잘못 읽히면 ttsText로 교정한다 — 의심 목록은 tools/check_grammar_tts.py.
-audio/grammar/manifest.json에 내용 해시와 길이를 기록하고, 해시가 같으면 건너뛴다.
+audio/grammar/manifest.json에 내용 해시와 길이, 줄마다 단어별 시각(words — 재생 중 지금 읽는 단어 표시)을 기록하고, 해시가 같으면 건너뛴다.
 """
 import argparse
 import asyncio
+import difflib
 import hashlib
 import json
 import re
@@ -21,12 +22,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-from build_vocab_audio import VOICES_PATH, run_cmd, synth
-from grammar_common import GAUDIO_DIR, LEVEL_KEYS, ROOT, load_all_points, load_questions
+from build_audio import synth
+from build_vocab_audio import VOICES_PATH, run_cmd
+from grammar_common import GAUDIO_DIR, LEVEL_KEYS, ROOT, furigana_units, load_all_points, load_questions
 
 MANIFEST_PATH = GAUDIO_DIR / "manifest.json"
 KINDS = ["examples", "questions"]
-BUILD_VERSION = 1
+BUILD_VERSION = 2   # 2: 단어별 시각(words) 기록
 SPEAKER_RE = re.compile(r"^[A-ZＡ-Ｚ]：", re.M)
 
 
@@ -39,31 +41,76 @@ def example_speaker(n):
     return "F" if n == 1 else "M"
 
 
+def line_words(markup, spoken, bounds, lead):
+    """읽힌 글(spoken)의 단어 경계 → 화면 글의 줄(\\n)마다 [[시작초, 끝초, 시작글자, 끝글자]] (글자 위치는 그 줄 안에서).
+    후리가나 묶음이 가나로 읽혔으면(ttsText) 그 가나는 묶음 전체에 대응시킨다."""
+    # 읽힌 글과 맞춰 볼 글 H: 묶음마다 한자와 읽기 중 읽힌 글에 나오는 쪽. span[k] = H의 k번째 글자가 가리키는 화면 글자 구간
+    H, span, d, cur = "", [], 0, 0
+    for text, reading in furigana_units(markup):
+        use = text
+        if reading is not None:
+            at_t, at_r = spoken.find(text, cur), spoken.find(reading, cur)
+            if at_r >= 0 and (at_t < 0 or at_r < at_t):
+                use = reading
+        at = spoken.find(use, cur)
+        if at >= 0 and at - cur <= 2:
+            cur = at + len(use)
+        span += [(d, d + len(text))] * len(use) if use is not text else [(d + k, d + k + 1) for k in range(len(text))]
+        H += use
+        d += len(text)
+    plain = "".join(u[0] for u in furigana_units(markup))
+    at_spoken = [None] * len(spoken)   # 읽힌 글자 → 화면 글자 구간
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, H, spoken, autojunk=False).get_opcodes():
+        if tag == "equal":
+            for k in range(i2 - i1):
+                at_spoken[j1 + k] = span[i1 + k]
+    line_start = [0]
+    for i, c in enumerate(plain):
+        if c == "\n":
+            line_start.append(i + 1)
+    out, cur = [[] for _ in line_start], 0
+    for a, b, w in bounds:
+        at = spoken.find(w, cur)
+        if at < 0:
+            continue
+        cur = at + len(w)
+        hit = [s for s in at_spoken[at:cur] if s]
+        if not hit:
+            continue
+        cs, ce = hit[0][0], hit[-1][1]
+        li = max(i for i, s in enumerate(line_start) if s <= cs)
+        end = (line_start[li + 1] - 1) if li + 1 < len(line_start) else len(plain)
+        ce = min(ce, end)
+        if ce > cs:
+            out[li].append([round(a + lead, 3), round(b + lead, 3), cs - line_start[li], ce - line_start[li]])
+    return out
+
+
 def collect_jobs(levels, only):
-    """(kind, id, speaker, text) 목록."""
+    """(kind, id, speaker, text, 후리가나 문장) 목록."""
     jobs = []
     points = load_all_points()
     for lv in levels:
         if "examples" in only:
             for p in points[lv]:
                 for n, ex in enumerate(p["examples"], 1):
-                    jobs.append(("examples", f"{p['id']}-{n}", example_speaker(n), ex.get("ttsText", ex["text"])))
+                    jobs.append(("examples", f"{p['id']}-{n}", example_speaker(n), ex.get("ttsText", ex["text"]), ex["furigana"]))
         if "questions" in only:
             for q in load_questions(lv):
-                jobs.append(("questions", q["id"], "N", speech_text(q.get("ttsText", q["fullText"]))))
+                jobs.append(("questions", q["id"], "N", speech_text(q.get("ttsText", q["fullText"])), q["fullFurigana"]))
     return jobs
 
 
 def job_hash(job, vc):
-    kind, _id, spk, text = job
+    kind, _id, spk, text, _markup = job
     payload = {"v": BUILD_VERSION, "text": text, "voice": vc["voices"][spk], "pad": vc["grammar"], "output": vc["output"]}
     return hashlib.sha1(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
 async def render(job, vc, tmpdir):
-    kind, jid, spk, text = job
+    kind, jid, spk, text, markup = job
     raw = Path(tmpdir) / f"{kind}-{jid}.mp3"
-    await synth(text, vc["voices"][spk], raw, vc["tts"]["retries"])
+    bounds = await synth(text, vc["voices"][spk], raw, vc["tts"]["retries"])
     out = GAUDIO_DIR / kind / f"{jid}.mp3"
     out.parent.mkdir(parents=True, exist_ok=True)
     part = out.with_suffix(".part.mp3")
@@ -74,7 +121,7 @@ async def render(job, vc, tmpdir):
     part.replace(out)
     raw.unlink(missing_ok=True)
     dur = await run_cmd("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(out))
-    return float(dur.strip())
+    return float(dur.strip()), line_words(markup, text, bounds, pad["leadIn"])
 
 
 def main():
@@ -101,7 +148,7 @@ def main():
         jobs = [j for j in jobs if j[1] == args.id]
 
     if args.prune and not args.level and not args.id:
-        live = {f"{k}/{i}" for k, i, _, _ in collect_jobs(LEVEL_KEYS, KINDS)}
+        live = {f"{j[0]}/{j[1]}" for j in collect_jobs(LEVEL_KEYS, KINDS)}
         removed = 0
         for kind in KINDS:
             for f in (GAUDIO_DIR / kind).glob("*.mp3") if (GAUDIO_DIR / kind).is_dir() else []:
@@ -133,8 +180,8 @@ def main():
                 nonlocal done
                 async with sem:
                     try:
-                        dur = await render(j, vc, tmp)
-                        manifest[key] = {"hash": digest, "duration": round(dur, 3)}
+                        dur, words = await render(j, vc, tmp)
+                        manifest[key] = {"hash": digest, "duration": round(dur, 3), "words": words}
                     except Exception as e:
                         failed.append((key, str(e)))
                     done += 1
